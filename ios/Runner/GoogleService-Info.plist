@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyDsdh0mRQyMiH3bgZbBDPr6h880C39al0g</string>
+	<key>GCM_SENDER_ID</key>
+	<string>985372741706</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.blackmadonna.spotifyProject</string>
+	<key>PROJECT_ID</key>
+	<string>musee-285eb</string>
+	<key>STORAGE_BUCKET</key>
+	<string>musee-285eb.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:985372741706:ios:28f7c866bc9f16b0ff96b3</string>
+	<key>DATABASE_URL</key>
+	<string>https://musee-285eb-default-rtdb.europe-west1.firebasedatabase.app</string>
+</dict>
+</plist>
