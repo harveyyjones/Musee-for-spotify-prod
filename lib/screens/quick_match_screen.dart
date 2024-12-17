@@ -16,7 +16,7 @@ class QuickMatchesScreen extends StatefulWidget {
 
 class _QuickMatchesScreenState extends State<QuickMatchesScreen> {
   final SwipeTracker _swipeTracker = SwipeTracker();
-  Future<List<UserModel>>? _dataFuture;
+  Future<List<UserWithCommonSongs>>? _dataFuture;
   late String _showSwipedAgainLater;
   late String _neverSeeIfUnliked;
   final FirestoreDatabaseService firestoreDatabaseService =
@@ -35,10 +35,11 @@ class _QuickMatchesScreenState extends State<QuickMatchesScreen> {
     _dataFuture = _loadData(_neverSeeIfUnliked);
   }
 
-  Future<List<UserModel>> _loadData(String filterType) async {
+  Future<List<UserWithCommonSongs>> _loadData(String filterType) async {
     try {
       // Try to get filtered users
-      List<UserModel> users = await _swipeTracker.getFilteredUsersForSwipeCard(
+      List<UserWithCommonSongs> users =
+          await _swipeTracker.getFilteredUsersForSwipeCard(
         filterType: filterType,
       );
       return users;
@@ -102,7 +103,7 @@ class _QuickMatchesScreenState extends State<QuickMatchesScreen> {
           },
         ),
       ),
-      body: FutureBuilder<List<UserModel>>(
+      body: FutureBuilder<List<UserWithCommonSongs>>(
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -119,9 +120,9 @@ class _QuickMatchesScreenState extends State<QuickMatchesScreen> {
             );
           }
 
-          final users = snapshot.data ?? [];
+          final usersWithSongs = snapshot.data ?? [];
 
-          if (users.isEmpty) {
+          if (usersWithSongs.isEmpty) {
             return Center(
               child: Text(
                 'No matches available',
@@ -131,7 +132,7 @@ class _QuickMatchesScreenState extends State<QuickMatchesScreen> {
           }
 
           return SwipeCardWidgetForQuickMatch(
-            snapshotData: users,
+            snapshotData: usersWithSongs,
             onSwipe: (bool isLike) async {
               await _swipeTracker.trackSwipe(isLike: isLike);
 

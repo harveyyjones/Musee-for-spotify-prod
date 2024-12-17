@@ -10,10 +10,10 @@ import 'package:spotify_project/business/Spotify_Logic/constants.dart';
 import 'package:spotify_project/business/business_logic.dart';
 import 'package:spotify_project/business/subscription_service.dart';
 import 'package:spotify_project/business/payment_service/payment_service.dart';
-import 'package:spotify_project/screens/chat_screen.dart';
 import 'package:spotify_project/screens/landing_screen.dart';
-import 'package:spotify_project/screens/message_box.dart';
-import 'package:spotify_project/screens/test_screens/test_screen_for_search.dart';
+import 'package:spotify_project/screens/own_profile_screens_for_clients.dart';
+import 'package:spotify_project/screens/shareable%20images%20for%20marketing/share_your_tops_screen.dart';
+
 import 'package:spotify_project/widgets/bottom_bar.dart';
 import 'package:spotify_project/widgets/build_current_track_widget.dart';
 
@@ -22,8 +22,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:spotify_sdk/spotify_sdk.dart';
 import 'screens/quick_match_screen.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -255,7 +253,6 @@ Future<void> initializeFirebaseMessaging() async {
 }
 
 class MyApp extends StatelessWidget {
-  var _currentUser = FirebaseAuth.instance.currentUser;
   final BusinessLogic businessLogic;
   MyApp({Key? key, required this.businessLogic}) : super(key: key);
 
@@ -278,7 +275,9 @@ class MyApp extends StatelessWidget {
           ),
         ),
         // Check if user is signed in
-        home: _currentUser != null ? MessageScreen() : LandingPage(),
+        home: FirebaseAuth.instance.currentUser != null
+            ? OwnProfileScreenForClients()
+            : LandingPage(),
       ),
     );
   }

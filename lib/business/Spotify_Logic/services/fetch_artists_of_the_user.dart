@@ -8,7 +8,8 @@ import 'package:spotify_project/business/Spotify_Logic/constants.dart';
 class SpotifyServiceForTopArtists {
   SpotifyServiceForTopArtists();
 
-  Future<SpotifyArtistsResponse> fetchArtists() async {
+  Future<SpotifyArtistsResponse> fetchArtists(
+      {required String accessToken}) async {
     if (accessToken.isEmpty) {
       throw Exception('Access token is null or empty');
     }

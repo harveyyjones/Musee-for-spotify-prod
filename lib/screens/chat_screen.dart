@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -32,6 +33,33 @@ class _ChatScreenState extends State<ChatScreen> with ActiveStatusUpdater {
   final ChatDatabaseService _chatDBService = ChatDatabaseService();
   final TextEditingController _textController = TextEditingController();
   String? messageText;
+
+  void sendMessage() {
+    if (_textController.text.trim().isNotEmpty) {
+      Message messageToSaveAndSend = Message(
+        fromWhom: currentUser!.uid,
+        date: FieldValue.serverTimestamp(),
+        isSentByMe: true,
+        message: _textController.text,
+        toWhom: widget.userIDOfOtherUser,
+      );
+      _chatDBService.sendMessage(messageToSaveAndSend);
+      _textController.clear();
+      setState(() {
+        messageText = null;
+      });
+
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -316,173 +344,164 @@ class _ChatScreenState extends State<ChatScreen> with ActiveStatusUpdater {
   }
 
   Widget _buildMessageComposer() {
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.only(left: 16.w, bottom: 8.h),
-          child: Row(
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .doc(FirebaseAuth.instance.currentUser?.uid)
+          .collection('tokens')
+          .doc('spotify')
+          .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else if (!snapshot.hasData || !snapshot.data!.exists) {
+          return SizedBox.shrink();
+        } else {
+          return Column(
             children: [
-              GestureDetector(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (BuildContext context) {
-                      return FractionallySizedBox(
-                        heightFactor: 0.9,
-                        child: TestSearchScreen(
-                          userIDOfOtherUser: widget.userIDOfOtherUser,
+              Padding(
+                padding: EdgeInsets.only(left: 16.w, bottom: 8.h),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (BuildContext context) {
+                            return FractionallySizedBox(
+                              heightFactor: 0.9,
+                              child: TestSearchScreen(
+                                userIDOfOtherUser: widget.userIDOfOtherUser,
+                              ),
+                            );
+                          },
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(0xFF8E2DE2),
+                              Color(0xFF4A00E0),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(25.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(0xFF8E2DE2),
-                        Color(0xFF4A00E0),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(25.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 24.w, vertical: 12.h),
+                        child: Text(
+                          '🎵 Send a Song',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18.sp,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-                  child: Text(
-                    '🎵 Send a Song',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18.sp,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _textController,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 23.sp,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: "Type a message...",
-                    hintStyle: GoogleFonts.poppins(
-                      color: Colors.white.withOpacity(0.5),
-                      fontSize: 23.sp,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(35.r),
-                      borderSide: BorderSide(
-                        color: Colors.white.withOpacity(0.1),
-                        width: 1.5,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(35.r),
-                      borderSide: BorderSide(
-                        color: Colors.purple.withOpacity(0.5),
-                        width: 1.5,
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: Colors.black.withOpacity(0.2),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 30.w,
-                      vertical: 23.h,
-                    ),
-                    isDense: true,
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      messageText = value;
-                    });
-                  },
-                ),
-              ),
-              SizedBox(width: 16.w),
-              Container(
-                height: 70.h,
-                width: 70.h,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF9C27B0),
-                      Color(0xFF00BCD4),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(35.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF9C27B0).withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(35.r),
-                    onTap: _sendMessage,
-                    child: Icon(
-                      Icons.send_rounded,
-                      color: Colors.white,
-                      size: 29.sp,
+              ),
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _textController,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 23.sp,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: "Type a message...",
+                          hintStyle: GoogleFonts.poppins(
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: 23.sp,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(35.r),
+                            borderSide: BorderSide(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(35.r),
+                            borderSide: BorderSide(
+                              color: Colors.purple.withOpacity(0.5),
+                              width: 1.5,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: Colors.black.withOpacity(0.2),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 30.w,
+                            vertical: 23.h,
+                          ),
+                          isDense: true,
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            messageText = value;
+                          });
+                        },
+                      ),
                     ),
-                  ),
+                    SizedBox(width: 16.w),
+                    Container(
+                      height: 70.h,
+                      width: 70.h,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF9C27B0),
+                            Color(0xFF00BCD4),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(35.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF9C27B0).withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(35.r),
+                          onTap: sendMessage,
+                          child: Icon(
+                            Icons.send_rounded,
+                            color: Colors.white,
+                            size: 29.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _sendMessage() {
-    if (_textController.text.trim().isNotEmpty) {
-      Message messageToSaveAndSend = Message(
-        fromWhom: currentUser!.uid,
-        date: FieldValue.serverTimestamp(),
-        isSentByMe: true,
-        message: _textController.text,
-        toWhom: widget.userIDOfOtherUser,
-      );
-      _chatDBService.sendMessage(messageToSaveAndSend);
-      _textController.clear();
-      setState(() {
-        messageText = null;
-      });
-
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
           );
         }
-      });
-    }
+      },
+    );
   }
 
   Widget _messageBubble(Message message) {

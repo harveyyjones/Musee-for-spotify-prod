@@ -110,12 +110,12 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
       final croppedImage = await ImageCropper().cropImage(
         sourcePath: image.path,
-        aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1),
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
         compressQuality: 70,
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Crop Image',
-            toolbarColor: Color(0xFF1DB954),
+            toolbarColor: const Color(0xFF1DB954),
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.square,
             lockAspectRatio: true,
@@ -144,7 +144,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
       margin: EdgeInsets.only(bottom: 16.h),
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Color(0xFF1E1E1E),
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: Colors.white.withOpacity(0.05),
@@ -159,7 +159,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             style: GoogleFonts.poppins(
               fontSize: 18.sp,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1DB954),
+              color: const Color(0xFF1DB954),
               letterSpacing: 0.3,
             ),
           ),
@@ -175,7 +175,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     return Container(
       height: 180.h,
       decoration: BoxDecoration(
-        color: Color(0xFF1E1E1E),
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
           color: Colors.white.withOpacity(0.1),
@@ -191,14 +191,14 @@ class _ProfileSettingsState extends State<ProfileSettings> {
             child: Container(
               height: 36.h,
               decoration: BoxDecoration(
-                color: Color(0xFF1DB954).withOpacity(0.1),
+                color: const Color(0xFF1DB954).withOpacity(0.1),
                 border: Border(
                   top: BorderSide(
-                    color: Color(0xFF1DB954).withOpacity(0.3),
+                    color: const Color(0xFF1DB954).withOpacity(0.3),
                     width: 1,
                   ),
                   bottom: BorderSide(
-                    color: Color(0xFF1DB954).withOpacity(0.3),
+                    color: const Color(0xFF1DB954).withOpacity(0.3),
                     width: 1,
                   ),
                 ),
@@ -226,7 +226,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                     fontWeight:
                         age == _selectedAge ? FontWeight.w600 : FontWeight.w400,
                     color: age == _selectedAge
-                        ? Color(0xFF1DB954)
+                        ? const Color(0xFF1DB954)
                         : Colors.white.withOpacity(0.8),
                   ),
                 ),
@@ -245,9 +245,9 @@ class _ProfileSettingsState extends State<ProfileSettings> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildGenderButton('Male', Color(0xFF4A90E2)),
+          _buildGenderButton('Male', const Color(0xFF4A90E2)),
           SizedBox(width: 16.w),
-          _buildGenderButton('Female', Color(0xFFE24A85)),
+          _buildGenderButton('Female', const Color(0xFFE24A85)),
         ],
       ),
     );
@@ -276,7 +276,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           });
         },
         child: AnimatedContainer(
-          duration: Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 200),
           padding: EdgeInsets.symmetric(vertical: 16.h),
           decoration: BoxDecoration(
             color: isSelected ? color.withOpacity(0.15) : Colors.transparent,
@@ -291,13 +291,13 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                       color: color.withOpacity(0.2),
                       blurRadius: 8,
                       spreadRadius: 0,
-                      offset: Offset(0, 2),
+                      offset: const Offset(0, 2),
                     ),
                     BoxShadow(
                       color: color.withOpacity(0.1),
                       blurRadius: 12,
                       spreadRadius: 4,
-                      offset: Offset(0, 4),
+                      offset: const Offset(0, 4),
                     ),
                   ]
                 : [],
@@ -343,7 +343,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               'Changes saved successfully!',
               style: GoogleFonts.poppins(color: Colors.white),
             ),
-            backgroundColor: Color(0xFF1DB954),
+            backgroundColor: const Color(0xFF1DB954),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.r),
@@ -373,12 +373,12 @@ class _ProfileSettingsState extends State<ProfileSettings> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF121212),
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Color(0xFF1DB954)),
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1DB954)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -394,7 +394,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         stream: _databaseService.getProfileData(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return Center(
+            return const Center(
                 child: CircularProgressIndicator(color: Color(0xFF1DB954)));
           }
 
@@ -403,7 +403,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-            physics: BouncingScrollPhysics(),
+            physics: const BouncingScrollPhysics(),
             child: Column(
               children: [
                 _buildSettingsSection('Photos', _buildPhotoGrid()),
@@ -426,7 +426,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
   Widget _buildPhotoGrid() {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           Row(
@@ -436,7 +436,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               _buildPhotoTile(1),
             ],
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -457,7 +457,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         width: screenWidth / 2.5,
         height: screenWidth / 2.5,
         decoration: BoxDecoration(
-          color: Color(0xFF2A2A2A),
+          color: const Color(0xFF2A2A2A),
           borderRadius: BorderRadius.circular(13),
           image: hasPhoto
               ? DecorationImage(
@@ -472,7 +472,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 children: [
                   Icon(Icons.add_a_photo,
                       size: screenWidth / 8, color: Colors.grey[400]),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'Add Photo',
                     style: GoogleFonts.poppins(
@@ -491,26 +491,26 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) => CupertinoActionSheet(
-        title: Text('Select Photo Source'),
+        title: const Text('Select Photo Source'),
         actions: <CupertinoActionSheetAction>[
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.pop(context);
               pickImage(ImageSource.camera, index);
             },
-            child: Text('Camera'),
+            child: const Text('Camera'),
           ),
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.pop(context);
               pickImage(ImageSource.gallery, index);
             },
-            child: Text('Gallery'),
+            child: const Text('Gallery'),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
           onPressed: () => Navigator.pop(context),
-          child: Text('Cancel'),
+          child: const Text('Cancel'),
           isDestructiveAction: true,
         ),
       ),
@@ -545,7 +545,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Color(0xFF2A2A2A),
+        color: const Color(0xFF2A2A2A),
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
           color: Colors.white.withOpacity(0.1),
@@ -567,13 +567,13 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           ),
           floatingLabelStyle: GoogleFonts.poppins(
             fontSize: 16.sp,
-            color: Color(0xFF1DB954),
+            color: const Color(0xFF1DB954),
           ),
-          contentPadding: EdgeInsets.all(16),
+          contentPadding: const EdgeInsets.all(16),
           border: InputBorder.none,
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.r),
-            borderSide: BorderSide(
+            borderSide: const BorderSide(
               color: Color(0xFF1DB954),
               width: 2,
             ),
@@ -590,17 +590,18 @@ class _ProfileSettingsState extends State<ProfileSettings> {
         try {
           await FirebaseAuth.instance.signOut();
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => LoginPage()),
+            MaterialPageRoute(builder: (context) => const LoginPage()),
             (Route<dynamic> route) => false,
           );
         } catch (e) {
           print("Error signing out: $e");
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Failed to log out. Please try again.")),
+            const SnackBar(
+                content: Text("Failed to log out. Please try again.")),
           );
         }
       },
-      child: Text('Logout'),
+      child: const Text('Logout'),
     );
   }
 
@@ -608,7 +609,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     return ElevatedButton(
       onPressed: _showDeleteAccountDialog,
       style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-      child: Text('Delete Account'),
+      child: const Text('Delete Account'),
     );
   }
 
@@ -617,7 +618,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Color(0xFF2A2A2A),
+          backgroundColor: const Color(0xFF2A2A2A),
           title: Text(
             'Delete Account',
             style: GoogleFonts.poppins(
@@ -633,11 +634,15 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pop(context);
+                currentUser = null;
+                FirebaseAuth.instance.currentUser?.delete();
+              },
               child: Text(
                 'Cancel',
                 style: GoogleFonts.poppins(
-                  color: Color(0xFF1DB954),
+                  color: const Color(0xFF1DB954),
                 ),
               ),
             ),
@@ -665,7 +670,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
 
                   // Navigate to login page
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => LoginPage()),
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
                     (Route<dynamic> route) => false,
                   );
                 } catch (e) {
@@ -697,10 +702,10 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           ElevatedButton(
             onPressed: _saveChanges,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF1DB954),
+              backgroundColor: const Color(0xFF1DB954),
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(vertical: 16.h),
-              minimumSize: Size(double.infinity, 0),
+              minimumSize: const Size(double.infinity, 0),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30.r),
               ),
@@ -719,15 +724,16 @@ class _ProfileSettingsState extends State<ProfileSettings> {
           ElevatedButton(
             onPressed: () async {
               try {
-                await FirebaseAuth.instance.signOut();
+                await FirebaseAuth.instance.signOut().then((value) {});
+
                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => LoginPage()),
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
                   (Route<dynamic> route) => false,
                 );
               } catch (e) {
                 print("Error signing out: $e");
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                       content: Text("Failed to log out. Please try again.")),
                 );
               }
@@ -736,7 +742,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(vertical: 16.h),
-              minimumSize: Size(double.infinity, 0),
+              minimumSize: const Size(double.infinity, 0),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30.r),
               ),
@@ -761,9 +767,9 @@ class _ProfileSettingsState extends State<ProfileSettings> {
     return GestureDetector(
       onTap: () => _showAgePickerModal(),
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Color(0xFF2A2A2A),
+          color: const Color(0xFF2A2A2A),
           borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
             color: Colors.white.withOpacity(0.1),
@@ -807,13 +813,13 @@ class _ProfileSettingsState extends State<ProfileSettings> {
   void _showAgePickerModal() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Color(0xFF2A2A2A),
+      backgroundColor: const Color(0xFF2A2A2A),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       builder: (context) => Container(
         height: 300.h,
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             Row(
@@ -833,7 +839,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   },
                   child: Text(
                     'Done',
-                    style: GoogleFonts.poppins(color: Color(0xFF1DB954)),
+                    style: GoogleFonts.poppins(color: const Color(0xFF1DB954)),
                   ),
                 ),
               ],
@@ -846,10 +852,10 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                 selectionOverlay: Container(
                   decoration: BoxDecoration(
                     border: Border(
-                      top:
-                          BorderSide(color: Color(0xFF1DB954).withOpacity(0.3)),
-                      bottom:
-                          BorderSide(color: Color(0xFF1DB954).withOpacity(0.3)),
+                      top: BorderSide(
+                          color: const Color(0xFF1DB954).withOpacity(0.3)),
+                      bottom: BorderSide(
+                          color: const Color(0xFF1DB954).withOpacity(0.3)),
                     ),
                   ),
                 ),
@@ -869,7 +875,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                             ? FontWeight.w600
                             : FontWeight.w400,
                         color: age == _selectedAge
-                            ? Color(0xFF1DB954)
+                            ? const Color(0xFF1DB954)
                             : Colors.white.withOpacity(0.8),
                       ),
                     ),

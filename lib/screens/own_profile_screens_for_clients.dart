@@ -7,6 +7,7 @@ import 'package:spotify_project/business/Spotify_Logic/Models/top_10_track_model
 import 'package:spotify_project/business/Spotify_Logic/constants.dart';
 import 'package:spotify_project/screens/profile_settings.dart';
 import 'package:spotify_project/screens/register_page.dart';
+import 'package:spotify_project/screens/shareable%20images%20for%20marketing/share_your_tops_screen.dart';
 import 'package:spotify_project/widgets/bottom_bar.dart';
 import 'package:spotify_sdk/models/player_state.dart';
 import 'package:spotify_sdk/spotify_sdk.dart';
@@ -27,6 +28,7 @@ class _OwnProfileScreenForClientsState
     extends State<OwnProfileScreenForClients> {
   final FirestoreDatabaseService _firestoreService = FirestoreDatabaseService();
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _screenshotKey = GlobalKey();
   var genres;
 
   static const String defaultImage =
@@ -40,15 +42,14 @@ class _OwnProfileScreenForClientsState
     _fetchAndLogSavedTracks();
     super.initState();
     // !accessToken.isEmpty
-    if (true) {
-      final topArtists = _firestoreService
-          .getTopArtistsFromFirebase(currentUser!.uid)
-          .then((data) {
-        print('genres are being prepeared data: $data');
-        genres =
-            _firestoreService.prepareGenresForProfiles(data as List<dynamic>?);
-      });
-    }
+
+    final topArtists = _firestoreService
+        .getTopArtistsFromFirebase(currentUser!.uid)
+        .then((data) {
+      print('genres are being prepeared data: $data');
+      genres =
+          _firestoreService.prepareGenresForProfiles(data as List<dynamic>?);
+    });
   }
 
   @override
@@ -100,6 +101,8 @@ class _OwnProfileScreenForClientsState
                   // Profile Header
                   _buildProfileHeader(userData),
 
+                  // Add a share button
+
                   // Current Track (Spotify)
                   SliverToBoxAdapter(
                     child: Padding(
@@ -115,12 +118,18 @@ class _OwnProfileScreenForClientsState
                             ._buildGenresWidget(genres),
                       ),
                     ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: 20.h),
+                  ),
+                  shareYourInterestButton(context),
+                  //  TODO: add the share interest button here
                   // Top Artists (Spotify)
                   if (true)
                     SliverToBoxAdapter(
                       child: FutureBuilder<SpotifyArtistsResponse>(
                         future: _firestoreService
-                            .getTopArtistsFromFirebase(userData.userId!)
+                            .getTopArtistsFromFirebase(userData.userId!,
+                                isForProfileScreen: false)
                             .then((data) => SpotifyArtistsResponse(
                                   href: '',
                                   limit: data?.length ?? 0,
@@ -594,4 +603,60 @@ class WidgetsForOwnProfileScreenForClients {
       ),
     );
   }
+}
+
+shareYourInterestButton(context) {
+  return SliverToBoxAdapter(
+    child: Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withOpacity(0.8),
+              AppColors.secondary.withOpacity(0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              spreadRadius: 2,
+              blurRadius: 5,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            padding: EdgeInsets.symmetric(vertical: 15.h),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+          ),
+          onPressed: () {
+            // Navigate to ShareableImagesForMarketing
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ShareableImagesForMarketing(),
+              ),
+            );
+          },
+          child: Text(
+            'Share Your Tops',
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.bold,
+              color: AppColors.white,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }

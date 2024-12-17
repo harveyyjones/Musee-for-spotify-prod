@@ -81,39 +81,37 @@ class SwipeTracker extends FirestoreDatabaseService {
     }
   }
 
-  Future<List<UserModel>> getFilteredUsersForSwipeCard({
+  Future<List<UserWithCommonSongs>> getFilteredUsersForSwipeCard({
     required String filterType,
-  })
-  // To use in quick matches.
-
-  async {
+  }) async {
     if (!isSubscriptionActive) {
       final canSwipe = await canUserSwipe();
       if (!canSwipe) {
-        throw SwipeLimitException('Daily swipe limit reached');
+        throw SwipeLimitException("Swipe limit reached");
       }
     }
-
-    switch (filterType) {
-      case "never see the unliked again":
-        return _getFilteredUsersExcludingUnliked();
-      case "show the swiped again later":
-        return _getAllUsers();
-      default:
-        throw ArgumentError('Invalid filter type provided');
-    }
+    return await _getFilteredUsersWithCommonSongs();
   }
 
-  Future<List<UserModel>> _getFilteredUsersExcludingUnliked() async {
+  Future<List<UserWithCommonSongs>> _getFilteredUsersWithCommonSongs() async {
+    // Get current user's saved tracks first
+    final currentUserTracks = await _firestore
+        .collection("users")
+        .doc(_userId)
+        .collection("spotify")
+        .doc("savedTracks")
+        .get();
+
+    // Get all users excluding previously seen ones
     final QuerySnapshot querySnapshot =
         await _firestore.collection("users").get();
-
     final previousMatchesRef = await _firestore
         .collection("matches")
         .doc(_userId)
         .collection("quickMatchesList")
         .get();
 
+    // Create excluded users set
     Set<String> excludedUserIds = {};
     for (var doc in previousMatchesRef.docs) {
       if (doc.data()["isLiked"] == false || doc.data()["isLiked"] == true) {
@@ -121,11 +119,67 @@ class SwipeTracker extends FirestoreDatabaseService {
       }
     }
 
-    return querySnapshot.docs
-        .where(
-            (doc) => !excludedUserIds.contains(doc.id) && (doc.id.isNotEmpty))
-        .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
-        .toList();
+    // Process each user
+    List<UserWithCommonSongs> usersWithCommonSongs = [];
+
+    for (var doc in querySnapshot.docs) {
+      // Skip if user is in excluded list or is current user
+      if (excludedUserIds.contains(doc.id) || doc.id.isEmpty) {
+        continue;
+      }
+
+      // Create user model
+      UserModel user = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+      List<Map<String, dynamic>> commonSongs = [];
+      int commonSongsCount = 0;
+
+      // Check for common songs if current user has saved tracks
+      if (currentUserTracks.exists &&
+          currentUserTracks.data()?['tracks'] != null) {
+        // Get other user's tracks
+        final otherUserTracks = await _firestore
+            .collection("users")
+            .doc(doc.id)
+            .collection("spotify")
+            .doc("savedTracks")
+            .get();
+
+        if (otherUserTracks.exists &&
+            otherUserTracks.data()?['tracks'] != null) {
+          // Get tracks lists
+          final tracks1 =
+              (currentUserTracks.data()?['tracks'] as List<dynamic>);
+          final tracks2 = (otherUserTracks.data()?['tracks'] as List<dynamic>);
+
+          // Find common songs
+          final uris1 = tracks1.map((t) => t['uri'] as String).toSet();
+          final uris2 = tracks2.map((t) => t['uri'] as String).toSet();
+          final commonUris = uris1.intersection(uris2);
+
+          commonSongsCount = commonUris.length;
+          if (commonSongsCount > 0) {
+            // Get just 2 common songs for display
+            commonSongs = tracks1
+                .where((track) => commonUris.contains(track['uri']))
+                .take(2)
+                .toList()
+                .cast<Map<String, dynamic>>();
+          }
+        }
+      }
+
+      usersWithCommonSongs.add(UserWithCommonSongs(
+        user: user,
+        commonSongs: commonSongs,
+        commonSongsCount: commonSongsCount,
+      ));
+    }
+
+    // Sort users: those with common songs first, then by number of common songs
+    usersWithCommonSongs
+        .sort((a, b) => b.commonSongsCount.compareTo(a.commonSongsCount));
+
+    return usersWithCommonSongs;
   }
 
   Future<List<UserModel>> _getAllUsers() async {

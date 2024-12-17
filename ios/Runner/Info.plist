@@ -70,10 +70,10 @@
 	<string>Main</string>
 	<key>UIStatusBarStyle</key>
 	<string></string>
-	<key>UISupportedExternalAccessoryProtocols</key>
+	<!-- <key>UISupportedExternalAccessoryProtocols</key>
 	<array>
 		<string>com.spotify.client</string>
-	</array>
+	</array> -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

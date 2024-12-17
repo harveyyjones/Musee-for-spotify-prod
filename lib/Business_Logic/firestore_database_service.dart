@@ -1000,7 +1000,7 @@ class FirestoreDatabaseService extends BusinessLogic {
           await _fireStore.collection('users').doc(uid).get();
 
       // First check if document exists and has data
-      if (docSnapshot.exists && docSnapshot.data() != null) {
+      if (docSnapshot.exists) {
         Map<String, dynamic> data = docSnapshot.data() as Map<String, dynamic>;
 
         // Then check if topArtists field exists and is not null
@@ -1018,37 +1018,72 @@ class FirestoreDatabaseService extends BusinessLogic {
           print("No top artists found for user: $uid");
           print(
               "Attempting to fetch top artists from spotify to update or set the firebase top artists...");
-          if (accessToken == null) {
-            SpotifyServiceForTopArtists().fetchArtists();
-          } else {
-            print(
-                'To fetch the top artists acessToken is required, attempting to obtain acces token and trying to fetch the top artists from spotify...');
-            try {
-              accessToken = await SpotifySdk.getAccessToken(
-                  clientId: '32a50962636143748e6779e2f604e07b',
-                  redirectUrl: 'com-developer-spotifyproject://callback',
-                  scope: 'app-remote-control '
-                      'user-modify-playback-state '
-                      'playlist-read-private '
-                      'user-library-read '
-                      'playlist-modify-public '
-                      'user-read-currently-playing '
-                      'user-top-read');
-              // Update token in Firebase
-              await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(FirebaseAuth.instance.currentUser?.uid)
-                  .collection('tokens')
-                  .doc('spotify')
-                  .set({
-                'tokens': accessToken,
-                'lastUpdated': DateTime.now(),
-              }).then((value) {
-                SpotifyServiceForTopArtists().fetchArtists();
-              });
-            } catch (e) {}
-          }
+          try {
+            accessToken = await SpotifySdk.getAccessToken(
+                    clientId: '32a50962636143748e6779e2f604e07b',
+                    redirectUrl: 'com-developer-spotifyproject://callback',
+                    scope: 'app-remote-control '
+                        'user-modify-playback-state '
+                        'playlist-read-private '
+                        'user-library-read '
+                        'playlist-modify-public '
+                        'user-read-currently-playing '
+                        'user-top-read')
+                .whenComplete(() async {
+              try {
+                // Update token in Firebase
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser?.uid)
+                    .collection('tokens')
+                    .doc('spotify')
+                    .set({
+                  'tokens': accessToken,
+                  'lastUpdated': DateTime.now(),
+                }).then((value) {
+                  SpotifyServiceForTopArtists()
+                      .fetchArtists(accessToken: accessToken);
+                });
+              } catch (e) {}
+            });
+            // Update token in Firebase
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(FirebaseAuth.instance.currentUser?.uid)
+                .collection('tokens')
+                .doc('spotify')
+                .set({
+              'tokens': accessToken,
+              'lastUpdated': DateTime.now(),
+            }).then((value) {
+              SpotifyServiceForTopArtists()
+                  .fetchArtists(accessToken: accessToken);
+            });
+          } catch (e) {}
         }
+      } else {
+        accessToken = await SpotifySdk.getAccessToken(
+            clientId: '32a50962636143748e6779e2f604e07b',
+            redirectUrl: 'com-developer-spotifyproject://callback',
+            scope: 'app-remote-control '
+                'user-modify-playback-state '
+                'playlist-read-private '
+                'user-library-read '
+                'playlist-modify-public '
+                'user-read-currently-playing '
+                'user-top-read');
+        // Update token in Firebase
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(FirebaseAuth.instance.currentUser?.uid)
+            .collection('tokens')
+            .doc('spotify')
+            .set({
+          'tokens': accessToken,
+          'lastUpdated': DateTime.now(),
+        }).then((value) {
+          SpotifyServiceForTopArtists().fetchArtists(accessToken: accessToken);
+        });
       }
     } catch (e) {
       print('Error fetching top artists: $e');

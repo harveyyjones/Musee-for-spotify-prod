@@ -109,3 +109,15 @@ class UserModel {
         interestedIn = List<String>.from(map["interestedIn"] ?? []),
         fcmToken = map["fcmToken"] as String? ?? '';
 }
+
+class UserWithCommonSongs {
+  final UserModel user;
+  final List<Map<String, dynamic>> commonSongs;
+  final int commonSongsCount;
+
+  UserWithCommonSongs({
+    required this.user,
+    required this.commonSongs,
+    required this.commonSongsCount,
+  });
+}
