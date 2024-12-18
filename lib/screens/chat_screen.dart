@@ -352,15 +352,11 @@ class _ChatScreenState extends State<ChatScreen> with ActiveStatusUpdater {
           .doc('spotify')
           .get(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
-        } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        } else if (!snapshot.hasData || !snapshot.data!.exists) {
-          return SizedBox.shrink();
-        } else {
-          return Column(
-            children: [
+        bool hasToken = snapshot.hasData && snapshot.data!.exists;
+
+        return Column(
+          children: [
+            if (hasToken)
               Padding(
                 padding: EdgeInsets.only(left: 16.w, bottom: 8.h),
                 child: Row(
@@ -382,7 +378,7 @@ class _ChatScreenState extends State<ChatScreen> with ActiveStatusUpdater {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
+                          gradient: const LinearGradient(
                             colors: [
                               Color(0xFF8E2DE2),
                               Color(0xFF4A00E0),
@@ -413,93 +409,92 @@ class _ChatScreenState extends State<ChatScreen> with ActiveStatusUpdater {
                   ],
                 ),
               ),
-              Container(
-                margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _textController,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _textController,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 23.sp,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "Type a message...",
+                        hintStyle: GoogleFonts.poppins(
+                          color: Colors.white.withOpacity(0.5),
                           fontSize: 23.sp,
                         ),
-                        decoration: InputDecoration(
-                          hintText: "Type a message...",
-                          hintStyle: GoogleFonts.poppins(
-                            color: Colors.white.withOpacity(0.5),
-                            fontSize: 23.sp,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(35.r),
-                            borderSide: BorderSide(
-                              color: Colors.white.withOpacity(0.1),
-                              width: 1.5,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(35.r),
-                            borderSide: BorderSide(
-                              color: Colors.purple.withOpacity(0.5),
-                              width: 1.5,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: Colors.black.withOpacity(0.2),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 30.w,
-                            vertical: 23.h,
-                          ),
-                          isDense: true,
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            messageText = value;
-                          });
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 16.w),
-                    Container(
-                      height: 70.h,
-                      width: 70.h,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF9C27B0),
-                            Color(0xFF00BCD4),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(35.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF9C27B0).withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
+                        enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(35.r),
-                          onTap: sendMessage,
-                          child: Icon(
-                            Icons.send_rounded,
-                            color: Colors.white,
-                            size: 29.sp,
+                          borderSide: BorderSide(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1.5,
                           ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(35.r),
+                          borderSide: BorderSide(
+                            color: Colors.purple.withOpacity(0.5),
+                            width: 1.5,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Colors.black.withOpacity(0.2),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 30.w,
+                          vertical: 23.h,
+                        ),
+                        isDense: true,
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          messageText = value;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(width: 16.w),
+                  Container(
+                    height: 70.h,
+                    width: 70.h,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF9C27B0),
+                          Color(0xFF00BCD4),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(35.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF9C27B0).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(35.r),
+                        onTap: sendMessage,
+                        child: Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 29.sp,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          );
-        }
+            ),
+          ],
+        );
       },
     );
   }
@@ -739,133 +734,144 @@ class _ChatScreenState extends State<ChatScreen> with ActiveStatusUpdater {
 
     final isSentByMe = message.isSentByMe ?? false;
 
-    return GestureDetector(
-      onTap: () async {
-        if (trackUri.isNotEmpty) {
-          try {
-            bool isConnected = await SpotifySdk.isSpotifyAppActive;
-            if (true) {
-              await SpotifySdk.connectToSpotifyRemote(
-                clientId: '32a50962636143748e6779e2f604e07b',
-                redirectUrl: 'com-developer-spotifyproject://callback',
-              );
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .collection('tokens')
+          .doc('spotify')
+          .get(),
+      builder: (context, snapshot) {
+        bool hasToken = snapshot.hasData && snapshot.data!.exists;
+
+        return GestureDetector(
+          onTap: () async {
+            if (trackUri.isNotEmpty && hasToken) {
+              try {
+                bool isConnected = await SpotifySdk.isSpotifyAppActive;
+                if (isConnected) {
+                  await SpotifySdk.connectToSpotifyRemote(
+                    clientId: '32a50962636143748e6779e2f604e07b',
+                    redirectUrl: 'com-developer-spotifyproject://callback',
+                  );
+                  await SpotifySdk.play(spotifyUri: trackUri);
+                }
+              } catch (error) {
+                print('Error playing track: $error');
+              }
             }
-            await SpotifySdk.play(spotifyUri: trackUri);
-          } catch (error) {
-            print('Error playing track: $error');
-          }
-        }
-      },
-      child: Align(
-        alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          margin: EdgeInsets.symmetric(
-              vertical: 9.h, horizontal: 18.w), // Increased by 80%
-          padding: EdgeInsets.all(27.w), // Increased by 80%
-          decoration: BoxDecoration(
-            gradient: isSentByMe
-                ? LinearGradient(
-                    colors: [
-                      const Color.fromARGB(255, 17, 141, 58)
-                          .withOpacity(0.95), // Spotify green
-                      const Color.fromARGB(255, 10, 96, 39)
-                          .withOpacity(0.95), // Lighter green
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : const LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 17, 88, 221),
-                      Color(0xFF4A4A4A),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+          },
+          child: Align(
+            alignment:
+                isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              margin: EdgeInsets.symmetric(vertical: 9.h, horizontal: 18.w),
+              padding: EdgeInsets.all(27.w),
+              decoration: BoxDecoration(
+                gradient: isSentByMe
+                    ? LinearGradient(
+                        colors: [
+                          const Color.fromARGB(255, 17, 141, 58)
+                              .withOpacity(0.95),
+                          const Color.fromARGB(255, 10, 96, 39)
+                              .withOpacity(0.95),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : const LinearGradient(
+                        colors: [
+                          Color.fromARGB(255, 17, 88, 221),
+                          Color(0xFF4A4A4A),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(isSentByMe ? 50.4.r : 14.4.r),
+                  topRight: Radius.circular(isSentByMe ? 14.4.r : 50.4.r),
+                  bottomLeft: Radius.circular(50.4.r),
+                  bottomRight: Radius.circular(50.4.r),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isSentByMe
+                        ? const Color.fromARGB(255, 23, 127, 59)
+                            .withOpacity(0.3)
+                        : Colors.black.withOpacity(0.2),
+                    blurRadius: 14.4,
+                    offset: const Offset(0, 7.2),
                   ),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(
-                  isSentByMe ? 50.4.r : 14.4.r), // Increased by 80%
-              topRight: Radius.circular(
-                  isSentByMe ? 14.4.r : 50.4.r), // Increased by 80%
-              bottomLeft: Radius.circular(50.4.r), // Increased by 80%
-              bottomRight: Radius.circular(50.4.r), // Increased by 80%
+                ],
+              ),
+              child: Row(
+                children: [
+                  if (imageUrl.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14.4.r),
+                      child: Image.network(
+                        imageUrl,
+                        width: 90.w,
+                        height: 90.w,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(Icons.music_note,
+                              color: Colors.white54, size: 90.sp);
+                        },
+                      ),
+                    ),
+                  SizedBox(width: 18.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          trackName,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 28.8.sp,
+                          ),
+                        ),
+                        Text(
+                          artistName,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 21.6.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (hasToken)
+                    IconButton(
+                      icon: Icon(Icons.play_circle_fill,
+                          color: Colors.white, size: 40.sp),
+                      onPressed: () async {
+                        if (trackUri.isNotEmpty) {
+                          try {
+                            bool isConnected =
+                                await SpotifySdk.isSpotifyAppActive;
+                            if (isConnected) {
+                              await SpotifySdk.connectToSpotifyRemote(
+                                clientId: '32a50962636143748e6779e2f604e07b',
+                                redirectUrl:
+                                    'com-developer-spotifyproject://callback',
+                              );
+                              await SpotifySdk.play(spotifyUri: trackUri);
+                            }
+                          } catch (error) {
+                            print('Error playing track: $error');
+                          }
+                        }
+                      },
+                    ),
+                ],
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: isSentByMe
-                    ? const Color.fromARGB(255, 23, 127, 59).withOpacity(0.3)
-                    : Colors.black.withOpacity(0.2),
-                blurRadius: 14.4, // Increased by 80%
-                offset: const Offset(0, 7.2), // Increased by 80%
-              ),
-            ],
           ),
-          child: Row(
-            children: [
-              if (imageUrl.isNotEmpty)
-                ClipRRect(
-                  borderRadius:
-                      BorderRadius.circular(14.4.r), // Increased by 80%
-                  child: Image.network(
-                    imageUrl,
-                    width: 90.w, // Increased by 80%
-                    height: 90.w, // Increased by 80%
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(Icons.music_note,
-                          color: Colors.white54,
-                          size: 90.sp); // Increased by 80%
-                    },
-                  ),
-                ),
-              SizedBox(width: 18.w), // Increased by 80%
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      trackName,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 28.8.sp, // Increased by 80%
-                      ),
-                    ),
-                    Text(
-                      artistName,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 21.6.sp, // Increased by 80%
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.play_circle_fill,
-                    color: Colors.white, size: 40.sp),
-                onPressed: () async {
-                  if (trackUri.isNotEmpty) {
-                    try {
-                      bool isConnected = await SpotifySdk.isSpotifyAppActive;
-                      if (true) {
-                        await SpotifySdk.connectToSpotifyRemote(
-                          clientId: '32a50962636143748e6779e2f604e07b',
-                          redirectUrl:
-                              'com-developer-spotifyproject://callback',
-                        );
-                      }
-                      await SpotifySdk.play(spotifyUri: trackUri);
-                    } catch (error) {
-                      print('Error playing track: $error');
-                    }
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

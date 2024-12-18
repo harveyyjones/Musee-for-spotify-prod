@@ -554,7 +554,12 @@ class _ProfileSettingsState extends State<ProfileSettings> {
       ),
       child: TextField(
         controller: controller,
-        maxLines: maxLines,
+        maxLines: 1,
+        inputFormatters: [
+          FilteringTextInputFormatter.deny(RegExp(r'\n')),
+        ],
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => FocusScope.of(context).unfocus(),
         style: GoogleFonts.poppins(
           fontSize: 16.sp,
           color: Colors.white,
