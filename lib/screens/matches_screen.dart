@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:spotify_project/Business_Logic/firestore_database_service.dart';
 import 'package:spotify_project/Helpers/helpers.dart';
 import 'package:spotify_project/business/active_status_updater.dart';
@@ -11,6 +12,7 @@ import 'package:spotify_project/widgets/bottom_bar.dart';
 import 'package:spotify_sdk/spotify_sdk.dart';
 import 'package:swipe_cards/swipe_cards.dart';
 import 'package:spotify_project/screens/chat_screen.dart';
+import 'package:spotify_project/widgets/report_bottom_sheet_swipe.dart';
 
 class MatchesScreen extends StatefulWidget {
   const MatchesScreen({Key? key}) : super(key: key);
@@ -46,7 +48,6 @@ class _MatchesScreenState extends State<MatchesScreen>
 
       _matchData = await _firestoreDatabaseService.getPreviousMatchesList();
 
-      // Add this line to update the active status
       _firestoreDatabaseService.updateActiveStatus();
 
       if (mounted) {
@@ -127,7 +128,7 @@ class _MatchesScreenState extends State<MatchesScreen>
     // }
 
     return Container(
-      color: Color(0xFF2A2A2A), // Slightly lighter dark color for contrast
+      color: Color(0xFF2A2A2A),
       child: SwipeCardWidget(snapshotData: _matchData!),
     );
   }
@@ -135,7 +136,7 @@ class _MatchesScreenState extends State<MatchesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF1E1E1E), // Dark background color
+      backgroundColor: Color(0xFF1E1E1E),
       bottomNavigationBar: BottomBar(selectedIndex: 1),
       body: _isLoading
           ? _buildLoadingWidget()
@@ -198,6 +199,8 @@ class _SwipeCardWidgetState extends State<SwipeCardWidget> {
           userData: widget.snapshotData[index],
           onLike: () => _matchEngine!.currentItem?.like(),
           onNope: () => _matchEngine!.currentItem?.nope(),
+          onReport: () =>
+              _showReportBottomSheet(widget.snapshotData[index].userId),
         );
       },
       onStackFinished: () {
@@ -210,18 +213,41 @@ class _SwipeCardWidgetState extends State<SwipeCardWidget> {
       fillSpace: true,
     );
   }
+
+  void _showReportBottomSheet(String userId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ReportBottomSheetSwipeCard(
+        userId: userId,
+        onReportSubmitted: () {
+          _matchEngine!.currentItem?.nope();
+          _firestoreDatabaseService.updateIsLiked(false, userId);
+
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                "Thanks for your report, we will review it in less than 24 hours.",
+                style: GoogleFonts.poppins(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+          ));
+        },
+      ),
+    );
+  }
 }
 
 class UserProfileCard extends StatefulWidget {
   final dynamic userData;
   final VoidCallback onLike;
   final VoidCallback onNope;
+  final VoidCallback onReport;
 
   const UserProfileCard({
     Key? key,
     required this.userData,
     required this.onLike,
     required this.onNope,
+    required this.onReport,
   }) : super(key: key);
 
   @override
@@ -308,10 +334,9 @@ class _UserProfileCardState extends State<UserProfileCard> {
               builder: (context, snapshot) {
                 if (snapshot.hasData && snapshot.data != null) {
                   return Center(
-                    // Center the container
                     child: Container(
-                      width: 350.w, // Explicit width
-                      height: 350.w, // Same as width to make it square
+                      width: 350.w,
+                      height: 350.w,
                       margin: EdgeInsets.symmetric(horizontal: 20.w),
                       child: Card(
                         elevation: 8,
@@ -323,8 +348,7 @@ class _UserProfileCardState extends State<UserProfileCard> {
                         child: Container(
                           padding: EdgeInsets.all(16.w),
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment
-                                .center, // Center content vertically
+                            mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
@@ -381,7 +405,6 @@ class _UserProfileCardState extends State<UserProfileCard> {
               },
             ),
           ),
-
           // Rest of your existing widgets...
           Row(
             children: [
@@ -485,9 +508,18 @@ class _UserProfileCardState extends State<UserProfileCard> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildActionButton(Icons.close, Colors.red, widget.onNope),
-                SizedBox(width: 100.w), // Added space between buttons
+                SizedBox(width: 100.w),
                 _buildActionButton(Icons.favorite, Colors.green, widget.onLike),
               ],
+            ),
+          ),
+          Positioned(
+            top: 60.h,
+            right: 25.w,
+            child: IconButton(
+              icon: Icon(Icons.report_problem,
+                  color: const Color.fromARGB(255, 255, 255, 255)),
+              onPressed: widget.onReport,
             ),
           ),
         ],
@@ -499,8 +531,8 @@ class _UserProfileCardState extends State<UserProfileCard> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 130.w, // Increased button size
-        height: 130.w, // Increased button size
+        width: 130.w,
+        height: 130.w,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: const Color.fromARGB(255, 219, 219, 219),
@@ -516,7 +548,7 @@ class _UserProfileCardState extends State<UserProfileCard> {
         child: Icon(
           icon,
           color: color,
-          size: 60.sp, // Increased icon size
+          size: 60.sp,
         ),
       ),
     );

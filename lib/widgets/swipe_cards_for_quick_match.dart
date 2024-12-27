@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:spotify_project/screens/its_a_match_screen.dart';
+import 'package:spotify_project/widgets/report_bottom_sheet_swipe.dart';
 import 'package:swipe_cards/swipe_cards.dart';
 import 'package:spotify_project/Business_Logic/Models/user_model.dart';
 
@@ -20,6 +21,7 @@ class SwipeCardWidgetForQuickMatch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SwipeCards(
+      upSwipeAllowed: false,
       matchEngine: MatchEngine(
         swipeItems: snapshotData.map((userData) {
           return SwipeItem(
@@ -158,9 +160,11 @@ class _SwipeableCardState extends State<SwipeableCard>
                               child: CircularProgressIndicator(
                                   color: Colors.white));
                         },
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.error,
-                                size: 100, color: Colors.red),
+                        errorBuilder: (context, error, stackTrace) {
+                          print('Error loading image in swipe cards: $error');
+                          return const Icon(Icons.error,
+                              size: 100, color: Colors.red);
+                        },
                       );
               },
             ),
@@ -210,14 +214,15 @@ class _SwipeableCardState extends State<SwipeableCard>
                         color: Colors.white),
                   ),
                   const SizedBox(height: 4),
+                  // TODO: Below fonts are not working. Fix.
                   Text(
-                    widget.userData.user.majorInfo ?? 'No Major Info',
-                    style: const TextStyle(fontSize: 16, color: Colors.white70),
+                    widget.userData.user.songName ?? '',
+                    style: const TextStyle(fontSize: 20, color: Colors.white70),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Text(
                     widget.userData.user.biography ?? 'No biography available',
-                    style: const TextStyle(fontSize: 14, color: Colors.white60),
+                    style: TextStyle(fontSize: 20.sp, color: Colors.white60),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -527,9 +532,8 @@ class _UserProfileCardState extends State<UserProfileCard>
   void _nextImage() {
     if (_currentPage < widget.userData.profilePhotos.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.fastLinearToSlowEaseIn);
     }
   }
 
@@ -575,9 +579,11 @@ class _UserProfileCardState extends State<UserProfileCard>
                               child: CircularProgressIndicator(
                                   color: Colors.white));
                         },
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.error,
-                                size: 100, color: Colors.red),
+                        errorBuilder: (context, error, stackTrace) {
+                          print('Error loading image: $error');
+                          return const Icon(Icons.error,
+                              size: 100, color: Colors.red);
+                        },
                       );
               },
             ),
@@ -628,8 +634,8 @@ class _UserProfileCardState extends State<UserProfileCard>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    widget.userData.majorInfo ?? 'No Major Info',
-                    style: const TextStyle(fontSize: 16, color: Colors.white70),
+                    widget.userData.songName ?? 'No Major Info',
+                    style: const TextStyle(fontSize: 20, color: Colors.white70),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -667,6 +673,24 @@ class _UserProfileCardState extends State<UserProfileCard>
                 ),
               ),
             ),
+          // **************** Report Button ****************
+          Positioned(
+            top: 16.h,
+            right: 16.w,
+            child: IconButton(
+                onPressed: () {
+                  showBottomSheet(
+                      context: context,
+                      builder: (context) => ReportBottomSheetSwipeCard(
+                          userId: widget.userData.userId.toString(),
+                          onReportSubmitted: () {
+                            FirestoreDatabaseService()
+                                .updateIsLikedAsQuickMatch(
+                                    false, widget.userData.userId!);
+                          }));
+                },
+                icon: Icon(Icons.report_problem_outlined)),
+          )
         ],
       ),
     );

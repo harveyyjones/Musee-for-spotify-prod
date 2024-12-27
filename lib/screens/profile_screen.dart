@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:spotify_project/Business_Logic/firestore_database_service.dart';
+import 'package:spotify_project/business/Spotify_Logic/Models/chosen_top_track_model.dart';
 import 'package:spotify_project/business/Spotify_Logic/Models/top_10_track_model.dart';
 import 'package:spotify_project/business/active_status_updater.dart';
 import 'package:spotify_project/constants/app_colors.dart';
@@ -49,8 +50,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           await _firestoreDatabaseService.getUserDataForDetailPage(widget.uid);
       final topArtists = await _firestoreDatabaseService
           .getTopArtistsFromFirebase(widget.uid, isForProfileScreen: true);
-      final topTracks = await _firestoreDatabaseService
-          .getTopTracksFromFirebase(widget.uid, isForProfileScreen: true);
+      final topTracks =
+          await _firestoreDatabaseService.getChosenTopTracks(widget.uid);
 
       return {
         'userData': userData,
@@ -245,14 +246,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                         padding: EdgeInsets.only(top: 24.h),
                         child: _buildGenresWidget(genres),
                       ),
+                    SizedBox(height: 22.h),
+                    buildHobbies(genres, userData.userId!),
+                    SizedBox(height: 0.h),
                     if (topArtists != null && topArtists.isNotEmpty)
                       Padding(
                         padding: EdgeInsets.only(top: 24.h),
                         child: _buildTopArtists(topArtists),
                       ),
                     if (topTracks != null && topTracks.isNotEmpty)
-                      _buildTopTracks(
-                          topTracks as List<SpotifyTrackFromSpotify>),
+                      _buildTopTracks(topTracks as List<ChosenTopTrack>),
                   ],
                 ),
               ),
@@ -406,7 +409,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildTopTracks(List<SpotifyTrackFromSpotify> tracks) {
+  Widget _buildTopTracks(List<ChosenTopTrack> tracks) {
     return Stack(
       children: [
         Container(
@@ -429,7 +432,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(11.2.r),
                     child: Image.network(
-                      track.album.images.firstOrNull!.url.toString(),
+                      track.albumImage.toString(),
                       width: 70.w,
                       height: 70.w,
                       fit: BoxFit.cover,
@@ -450,7 +453,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     overflow: TextOverflow.ellipsis,
                   ),
                   subtitle: Text(
-                    track.artists.map((artist) => artist.name).join(', '),
+                    track.artist.toString(),
                     style: TextStyle(
                       color: AppColors.white.withOpacity(0.7),
                       fontSize: 19.6.sp,
@@ -1274,6 +1277,47 @@ class _ProfileScreenState extends State<ProfileScreen>
           ],
         ),
       ),
+    );
+  }
+
+  buildHobbies(List<String> hobbies, String userId) {
+    return FutureBuilder<List<String>>(
+      future: _firestoreDatabaseService.getUserHobbies(userId),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          print('Error loading hobbies: ${snapshot.error}');
+          return const SizedBox.shrink();
+        }
+        if (!snapshot.hasData || snapshot.data?.isEmpty == true) {
+          return const SizedBox.shrink();
+        }
+
+        final hobbies = snapshot.data!;
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          child: SizedBox(
+            height: 50.h,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: hobbies.map((hobby) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 8.w),
+                  child: Chip(
+                    label: Text(
+                      hobby,
+                      style: TextStyle(color: AppColors.white),
+                    ),
+                    backgroundColor: AppColors.primary.withOpacity(0.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -15,6 +15,8 @@ import 'package:spotify_project/screens/profile_screen.dart';
 import 'package:spotify_project/screens/register_page.dart';
 import 'package:intl/intl.dart';
 import 'package:spotify_project/screens/test_screens/test_screen_for_search.dart';
+import 'package:spotify_project/widgets/chat_screen_settings.dart';
+import 'package:spotify_project/widgets/report_bottom_sheet_swipe.dart';
 import 'package:spotify_sdk/spotify_sdk.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -28,11 +30,29 @@ class ChatScreen extends StatefulWidget {
   _ChatScreenState createState() => _ChatScreenState();
 }
 
+bool _hasSpotify = false;
+
 class _ChatScreenState extends State<ChatScreen> with ActiveStatusUpdater {
   final ScrollController _scrollController = ScrollController();
   final ChatDatabaseService _chatDBService = ChatDatabaseService();
   final TextEditingController _textController = TextEditingController();
   String? messageText;
+
+  Future<Map<String, dynamic>?> _checkIfHasSpotify() async {
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .get();
+
+    if (userDoc.exists) {
+      final data = userDoc.data();
+      setState(() {
+        _hasSpotify = data?['hasSpotify'] ?? false;
+      });
+      return data;
+    }
+    return null;
+  }
 
   void sendMessage() {
     if (_textController.text.trim().isNotEmpty) {
@@ -317,11 +337,23 @@ class _ChatScreenState extends State<ChatScreen> with ActiveStatusUpdater {
           Spacer(),
           IconButton(
             icon: Icon(
-              Icons.more_vert,
+              Icons.more_horiz,
               color: Colors.white,
               size: 36.sp,
             ),
-            onPressed: () {},
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => ChatScreenSettings(
+                  currentUserId: currentUser!.uid,
+                  otherUserId: widget.userIDOfOtherUser,
+                ),
+                isScrollControlled: true,
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height - 70.h,
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -344,19 +376,16 @@ class _ChatScreenState extends State<ChatScreen> with ActiveStatusUpdater {
   }
 
   Widget _buildMessageComposer() {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance
-          .collection('users')
-          .doc(FirebaseAuth.instance.currentUser?.uid)
-          .collection('tokens')
-          .doc('spotify')
-          .get(),
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _checkIfHasSpotify(),
       builder: (context, snapshot) {
-        bool hasToken = snapshot.hasData && snapshot.data!.exists;
+        if (snapshot.hasData) {
+          _hasSpotify = snapshot.data!['hasSpotify'] ?? false;
+        }
 
         return Column(
           children: [
-            if (hasToken)
+            if (_hasSpotify)
               Padding(
                 padding: EdgeInsets.only(left: 16.w, bottom: 8.h),
                 child: Row(

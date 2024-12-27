@@ -3,8 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:spotify_project/Business_Logic/Models/user_model.dart';
 import 'package:spotify_project/Business_Logic/firestore_database_service.dart';
+import 'package:spotify_project/business/Spotify_Logic/Models/chosen_top_track_model.dart';
 import 'package:spotify_project/business/Spotify_Logic/Models/top_10_track_model.dart';
 import 'package:spotify_project/business/Spotify_Logic/constants.dart';
+import 'package:spotify_project/business/Spotify_Logic/services/fetch_recently_played_tracks_service.dart';
 import 'package:spotify_project/screens/profile_settings.dart';
 import 'package:spotify_project/screens/register_page.dart';
 import 'package:spotify_project/screens/shareable%20images%20for%20marketing/share_your_tops_screen.dart';
@@ -36,10 +38,14 @@ class _OwnProfileScreenForClientsState
 
   final SpotifyServiceForSavedTracks _spotifyServiceForSavedTracks =
       SpotifyServiceForSavedTracks();
+  final SpotifyServiceForRecentlyPlayedTracks
+      _spotifyServiceForRecentlyPlayedTracks =
+      SpotifyServiceForRecentlyPlayedTracks();
 
   @override
   void initState() {
-    _fetchAndLogSavedTracks();
+    // _fetchAndLogSavedTracks();
+    // _fetchRecentlyPlayedTracks();
     super.initState();
     // !accessToken.isEmpty
 
@@ -124,6 +130,51 @@ class _OwnProfileScreenForClientsState
                   shareYourInterestButton(context),
                   //  TODO: add the share interest button here
                   // Top Artists (Spotify)
+                  SliverToBoxAdapter(child: SizedBox(height: 20.h)),
+                  SliverToBoxAdapter(
+                    child: FutureBuilder<List<String>>(
+                      future:
+                          _firestoreService.getUserHobbies(userData.userId!),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          print('Error loading hobbies: ${snapshot.error}');
+                          return const SizedBox.shrink();
+                        }
+                        if (!snapshot.hasData ||
+                            snapshot.data?.isEmpty == true) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final hobbies = snapshot.data!;
+                        return Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16.w, vertical: 8.h),
+                          child: SizedBox(
+                            height: 50.h,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: hobbies.map((hobby) {
+                                return Padding(
+                                  padding: EdgeInsets.only(right: 8.w),
+                                  child: Chip(
+                                    label: Text(
+                                      hobby,
+                                      style: TextStyle(color: AppColors.white),
+                                    ),
+                                    backgroundColor:
+                                        AppColors.primary.withOpacity(0.2),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16.r),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   if (true)
                     SliverToBoxAdapter(
                       child: FutureBuilder<SpotifyArtistsResponse>(
@@ -193,12 +244,13 @@ class _OwnProfileScreenForClientsState
 
                   // Top Tracks (Spotify)
                   SliverToBoxAdapter(
-                    child: FutureBuilder<List<SpotifyTrackFromSpotify>?>(
+                    child: FutureBuilder<List<ChosenTopTrack>?>(
                       future: _firestoreService
-                          .getTopTracksFromFirebase(userData.userId!),
+                          .getChosenTopTracks(userData.userId!),
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
-                          print('Error loading tracks: ${snapshot.error}');
+                          print(
+                              'Error loading chosen top tracks: ${snapshot.error}');
                           return const SizedBox.shrink();
                         }
                         if (!snapshot.hasData ||
@@ -206,7 +258,7 @@ class _OwnProfileScreenForClientsState
                           return const SizedBox.shrink();
                         }
 
-                        return _buildTopTracks(snapshot.data!);
+                        return _buildChosenTopTracks(snapshot.data!);
                       },
                     ),
                   ),
@@ -237,6 +289,19 @@ class _OwnProfileScreenForClientsState
       }
     } else {
       print('No saved tracks found or error fetching tracks.');
+    }
+  }
+
+  void _fetchRecentlyPlayedTracks() async {
+    // TODO: From now on below will fetch from the spotify in a different function specified for the firebase.
+    final recentlyPlayedTracks = await _spotifyServiceForRecentlyPlayedTracks
+        .getRecentlyPlayedTracksFromSpotify();
+    if (recentlyPlayedTracks != null) {
+      for (var item in recentlyPlayedTracks.items) {
+        print('Recently Played Song: ${item.track?.name ?? 'Unknown'}');
+      }
+    } else {
+      print('No recently played tracks found or error fetching tracks.');
     }
   }
 
@@ -401,7 +466,7 @@ class _OwnProfileScreenForClientsState
           ),
         ),
         SizedBox(
-          height: 160,
+          height: 160.h,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: 12.w),
@@ -409,13 +474,13 @@ class _OwnProfileScreenForClientsState
             itemBuilder: (context, index) {
               final artist = artists.items[index];
               return Container(
-                width: 120,
-                margin: EdgeInsets.symmetric(horizontal: 8),
+                width: 120.w,
+                margin: EdgeInsets.symmetric(horizontal: 8.w),
                 child: Column(
                   children: [
                     Container(
-                      width: 100,
-                      height: 100,
+                      width: 100.w,
+                      height: 100.w,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.primary),
@@ -431,12 +496,12 @@ class _OwnProfileScreenForClientsState
                         ),
                       ),
                     ),
-                    SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     Text(
                       artist.name,
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontSize: 16.sp,
+                      style: GoogleFonts.poppins(
+                        color: const Color.fromARGB(255, 194, 194, 194),
+                        fontSize: 25.sp,
                       ),
                       maxLines: 2,
                       textAlign: TextAlign.center,
@@ -451,73 +516,75 @@ class _OwnProfileScreenForClientsState
     );
   }
 
-  Widget _buildTopTracks(List<SpotifyTrackFromSpotify> tracks) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.all(20.w),
-          child: Text(
-            'Top Tracks',
-            style: GoogleFonts.poppins(
-              fontSize: 20.sp,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+  Widget _buildChosenTopTracks(List<ChosenTopTrack> tracks) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 140.h),
+      child: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(20.w),
+            child: Text(
+              'Chosen Top Tracks',
+              style: GoogleFonts.poppins(
+                fontSize: 20.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
             ),
           ),
-        ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemCount: min(tracks.length, 5),
-          itemBuilder: (context, index) {
-            final track = tracks[index];
-            return Container(
-              margin: EdgeInsets.symmetric(vertical: 8.h, horizontal: 20.w),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-              ),
-              child: ListTile(
-                contentPadding: EdgeInsets.all(12.w),
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.r),
-                  child: Image.network(
-                    track.album.images.firstOrNull?.url ?? defaultImage,
-                    width: 50.w,
-                    height: 50.w,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.music_note,
-                      color: AppColors.primary,
+          ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: min(tracks.length, 5),
+            itemBuilder: (context, index) {
+              final track = tracks[index];
+              return Container(
+                margin: EdgeInsets.symmetric(vertical: 8.h, horizontal: 20.w),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                ),
+                child: ListTile(
+                  contentPadding: EdgeInsets.all(12.w),
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(8.r),
+                    child: Image.network(
+                      track.albumImage ?? defaultImage,
+                      width: 50.w,
+                      height: 50.w,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.music_note,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
-                ),
-                title: Text(
-                  track.name ?? '',
-                  style: TextStyle(
-                    color: AppColors.white,
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
+                  title: Text(
+                    track.name ?? '',
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  track.artists.map((artist) => artist.name).join(', '),
-                  style: TextStyle(
-                    color: AppColors.white.withOpacity(0.7),
-                    fontSize: 14.sp,
+                  subtitle: Text(
+                    track.artist,
+                    style: TextStyle(
+                      color: AppColors.white.withOpacity(0.7),
+                      fontSize: 14.sp,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            );
-          },
-        ),
-      ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

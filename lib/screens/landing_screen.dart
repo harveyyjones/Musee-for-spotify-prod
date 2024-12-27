@@ -126,11 +126,9 @@ class GeneralButton extends StatelessWidget {
                     }));
           } catch (e) {
             print("Spotify connection failed: $e");
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content:
-                      Text("Failed to connect to Spotify. Please try again.")),
-            );
+            Navigator.of(context).push(CupertinoPageRoute(
+              builder: (context) => LoginPage(),
+            ));
           }
         }
       },

@@ -12,6 +12,7 @@ import 'package:spotify_project/screens/chat_screen.dart';
 import 'package:spotify_project/screens/premium_subscription_screen.dart';
 import 'package:spotify_project/widgets/bottom_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MessageScreen extends StatefulWidget {
   MessageScreen({Key? key}) : super(key: key);

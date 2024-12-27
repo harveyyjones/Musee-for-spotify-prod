@@ -38,6 +38,7 @@ class _TestSearchScreenState extends State<TestSearchScreen> {
   }
 
   Future<void> _getValidToken() async {
+    print('Getting valid token in the send a song search screen.');
     try {
       final doc = await FirebaseFirestore.instance
           .collection('users')
@@ -46,8 +47,14 @@ class _TestSearchScreenState extends State<TestSearchScreen> {
           .doc('spotify')
           .get();
 
-      if (!doc.exists || doc.data()?['tokens'] == null) {
-        // No token, get new one
+      if (!doc.exists ||
+          doc.data()?['tokens'] == null ||
+          DateTime.now()
+                  .difference(
+                      (doc.data()?['lastUpdated'] as Timestamp).toDate())
+                  .inMinutes >=
+              40) {
+        // No token or token expired, get new one
         final newToken = await SpotifySdk.getAccessToken(
             clientId: '32a50962636143748e6779e2f604e07b',
             redirectUrl: 'com-developer-spotifyproject://callback',

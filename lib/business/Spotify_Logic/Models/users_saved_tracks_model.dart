@@ -171,7 +171,7 @@ class Album {
   final ExternalUrls? externalUrls;
   final String? href;
   final String? id;
-  final List<Image> images;
+  final List<ImageSavedTracks> images;
   final bool? isPlayable;
   final String? name;
   final String? releaseDate;
@@ -212,7 +212,8 @@ class Album {
       href: json['href'] as String?,
       id: json['id'] as String?,
       images: (json['images'] as List<dynamic>)
-          .map((image) => Image.fromJson(image as Map<String, dynamic>))
+          .map((image) =>
+              ImageSavedTracks.fromJson(image as Map<String, dynamic>))
           .toList(),
       isPlayable: json['is_playable'] as bool?,
       name: json['name'] as String?,
@@ -286,19 +287,19 @@ class Artist {
   }
 }
 
-class Image {
+class ImageSavedTracks {
   final int? height;
   final int? width;
   final String? url;
 
-  Image({
+  ImageSavedTracks({
     this.height,
     this.width,
     this.url,
   });
 
-  factory Image.fromJson(Map<String, dynamic> json) {
-    return Image(
+  factory ImageSavedTracks.fromJson(Map<String, dynamic> json) {
+    return ImageSavedTracks(
       height: json['height'] as int?,
       width: json['width'] as int?,
       url: json['url'] as String?,

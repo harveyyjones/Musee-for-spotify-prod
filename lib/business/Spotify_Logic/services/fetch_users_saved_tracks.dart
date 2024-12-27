@@ -162,7 +162,7 @@ class SpotifyServiceForSavedTracks {
               artists: [],
               availableMarkets: [],
               images: trackData['albumImageUrl'] != null
-                  ? [Image(url: trackData['albumImageUrl'])]
+                  ? [ImageSavedTracks(url: trackData['albumImageUrl'])]
                   : [],
             ),
             artists: (trackData['artistNames'] as List<dynamic>)

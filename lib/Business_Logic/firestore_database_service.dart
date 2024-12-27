@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:spotify_project/Business_Logic/Models/message_model.dart';
 import 'package:spotify_project/Business_Logic/Models/spotify_refresh_token_response_model.dart';
+import 'package:spotify_project/business/Spotify_Logic/Models/chosen_top_track_model.dart';
 import 'package:spotify_project/business/Spotify_Logic/Models/top_10_track_model.dart';
 
 import 'package:spotify_project/business/Spotify_Logic/Models/top_artists_of_the_user_model.dart';
@@ -161,11 +162,7 @@ class FirestoreDatabaseService extends BusinessLogic {
     String? biography,
     List<String>? profilePhotos,
     String? name,
-    String? majorInfo,
-    String? clinicLocation,
-    String? clinicName,
     String? phoneNumber,
-    bool? clinicOwner,
     String? uid,
     int? age,
     String? gender,
@@ -185,16 +182,12 @@ class FirestoreDatabaseService extends BusinessLogic {
       eMail: FirebaseAuth.instance.currentUser?.email ??
           existingData['eMail'] ??
           "",
-      majorInfo: majorInfo ?? existingData['majorInfo'] ?? "",
       profilePhotoURL: profilePhotos?.isNotEmpty == true
           ? profilePhotos!.first
           : existingData['profilePhotoURL'],
       profilePhotos: profilePhotos ?? existingData['profilePhotos'] ?? [],
       name: name ?? existingData['name'] ?? "",
-      clinicLocation: clinicLocation ?? existingData['clinicLocation'] ?? "",
       userId: userId,
-      clinicName: clinicName ?? existingData['clinicName'] ?? "",
-      clinicOwner: clinicOwner ?? existingData['clinicOwner'] ?? false,
       phoneNumber: phoneNumber ?? existingData['phoneNumber'],
       age: age ?? existingData['age'],
       gender: gender ?? existingData['gender'],
@@ -330,7 +323,7 @@ class FirestoreDatabaseService extends BusinessLogic {
         .collection("messages")
         .orderBy("date")
         .snapshots();
-    // Önce d��kümanları sırayla ele almak için 1. map() metodunu çağırdık, sonra her bir dökümanı fromMap() metoduna yollamak için ikinci map metodunu çağırdık.
+    // Önce dökümanları sırayla ele almak için 1. map() metodunu çağırdık, sonra her bir dökümanı fromMap() metoduna yollamak için ikinci map metodunu çağırdık.
     return snapshot.map((event) =>
         event.docs.map((message) => Message.fromMap(message.data())).toList());
   }
@@ -554,7 +547,9 @@ class FirestoreDatabaseService extends BusinessLogic {
 
         // Check if the document contains the 'songName' field and matches
         if (item.data().containsKey('songName') &&
-            songName == item["songName"]) {
+            songName == item["songName"] &&
+            songName.isNotEmpty &&
+            songName != "--") {
           sendMatchesToDatabase(
               item["userId"], songName, songName, spotifyUri, image);
           print("Eşleşilen kişi: ${item["name"]}");
@@ -596,14 +591,13 @@ class FirestoreDatabaseService extends BusinessLogic {
     final docSnapshot = await matchDoc.get();
 
     if (hasMatchedBefore) {
-      if (docSnapshot.exists) {
+      if (docSnapshot.exists && title != '') {
         // Update existing match
         await matchDoc.update({
           "timeStamp": DateTime.now(),
           "url": musicUrl,
           "titleOfTheSong": title,
           "spotifyUri": spotifyUri,
-          // FIXME: Handle image later, it is an instance.
           "image": image.toString(),
         });
         print("Existing match updated successfully");
@@ -781,24 +775,48 @@ class FirestoreDatabaseService extends BusinessLogic {
     // Process quickMatchesList
     for (var item in quickMatchesRef.docs) {
       UserModel userModel = await getUserDataForDetailPage(item["uid"]);
-      // Check if user with this ID already exists in the set
-      if (!likedPeople
-          .any((existingUser) => existingUser.userId == userModel.userId)) {
-        likedPeople.add(userModel);
+      if (!await _isUserBlocked(userModel.userId!)) {
+        // Check if user with this ID already exists in the set
+        if (!likedPeople
+            .any((existingUser) => existingUser.userId == userModel.userId)) {
+          likedPeople.add(userModel);
+        }
       }
     }
 
     // Process previousMatchesList
     for (var item in previousMatchesRef.docs) {
       UserModel userModel = await getUserDataForDetailPage(item["uid"]);
-      // Check if user with this ID already exists in the set
-      if (!likedPeople
-          .any((existingUser) => existingUser.userId == userModel.userId)) {
-        likedPeople.add(userModel);
+      if (!await _isUserBlocked(userModel.userId!)) {
+        // Check if user with this ID already exists in the set
+        if (!likedPeople
+            .any((existingUser) => existingUser.userId == userModel.userId)) {
+          likedPeople.add(userModel);
+        }
       }
     }
 
     return likedPeople;
+  }
+
+  Future<bool> _isUserBlocked(String userId) async {
+    // Check if the user is blocked by the current user
+    var blockedByCurrentUser = await _instance
+        .collection('users')
+        .doc(currentUser!.uid)
+        .collection('blockedUsers')
+        .doc(userId)
+        .get();
+
+    // Check if the current user is blocked by the other user
+    var blockedByOtherUser = await _instance
+        .collection('users')
+        .doc(userId)
+        .collection('blockedBy')
+        .doc(currentUser!.uid)
+        .get();
+
+    return blockedByCurrentUser.exists || blockedByOtherUser.exists;
   }
 
   Future<List<UserModel>> getPeopleWhoLikedMe() async {
@@ -1028,7 +1046,8 @@ class FirestoreDatabaseService extends BusinessLogic {
                         'user-library-read '
                         'playlist-modify-public '
                         'user-read-currently-playing '
-                        'user-top-read')
+                        'user-top-read '
+                        'user-read-recently-played')
                 .whenComplete(() async {
               try {
                 // Update token in Firebase
@@ -1071,7 +1090,8 @@ class FirestoreDatabaseService extends BusinessLogic {
                 'user-library-read '
                 'playlist-modify-public '
                 'user-read-currently-playing '
-                'user-top-read');
+                'user-top-read '
+                'user-read-recently-played');
         // Update token in Firebase
         await FirebaseFirestore.instance
             .collection('users')
@@ -1553,6 +1573,60 @@ class FirestoreDatabaseService extends BusinessLogic {
       return commonSongs;
     } catch (e) {
       print('Error getting common songs: $e');
+      return [];
+    }
+  }
+
+  Future<List<ChosenTopTrack>?> getChosenTopTracks(String uid) async {
+    try {
+      print("Fetching chosen top tracks for user from Firebase: $uid");
+      DocumentSnapshot docSnapshot = await _fireStore
+          .collection('users')
+          .doc(uid)
+          .collection('spotify')
+          .doc('topTracksChoosen')
+          .get();
+
+      if (docSnapshot.exists && docSnapshot.data() != null) {
+        Map<String, dynamic> data = docSnapshot.data() as Map<String, dynamic>;
+
+        if (data.containsKey('tracks') && data['tracks'] != null) {
+          print('User has chosen top tracks field confirmed.');
+          var tracksData = List<Map<String, dynamic>>.from(
+              (data['tracks'] as List)
+                  .where((item) => item != null)
+                  .map((item) => item as Map<String, dynamic>));
+
+          return tracksData
+              .map((track) => ChosenTopTrack.fromJson(track))
+              .toList();
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching chosen top tracks: $e');
+      return null;
+    }
+  }
+
+  Future<List<String>> getUserHobbies(String uid) async {
+    try {
+      DocumentSnapshot docSnapshot = await _fireStore
+          .collection('users')
+          .doc(uid)
+          .collection('interests')
+          .doc('hobbies')
+          .get();
+
+      if (docSnapshot.exists && docSnapshot.data() != null) {
+        Map<String, dynamic> data = docSnapshot.data() as Map<String, dynamic>;
+        if (data.containsKey('hobbies') && data['hobbies'] != null) {
+          return List<String>.from(data['hobbies']);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching hobbies: $e');
       return [];
     }
   }

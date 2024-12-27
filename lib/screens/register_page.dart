@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:spotify_project/Business_Logic/firestore_database_service.dart';
+import 'package:spotify_project/business/Spotify_Logic/constants.dart';
+import 'package:spotify_project/business/business_logic.dart';
 import 'package:spotify_project/screens/login_page.dart';
 import 'package:spotify_project/screens/steppers.dart';
+import 'package:spotify_sdk/spotify_sdk.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -20,6 +23,7 @@ FirebaseAuth auth = FirebaseAuth.instance;
 User? currentUser = FirebaseAuth.instance.currentUser;
 
 class _RegisterPageState extends State<RegisterPage> {
+  BusinessLogic businessLogic = BusinessLogic();
   final formKey = GlobalKey<FormState>();
   final FirestoreDatabaseService _firestoreDatabaseService =
       FirestoreDatabaseService();
@@ -28,6 +32,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController nameController = TextEditingController();
   bool isVisible = false;
   bool isLoading = false;
+  bool isTermsAccepted = false;
 
   @override
   void dispose() {
@@ -68,11 +73,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'email': emailController.text.trim(),
         'name': nameController.text.trim(),
         'biography': '',
-        'majorInfo': '',
-        'clinicLocation': '',
-        'clinicName': '',
         'phoneNumber': '',
-        'clinicOwner': false,
         'fcmToken': fcmToken,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -85,17 +86,15 @@ class _RegisterPageState extends State<RegisterPage> {
       await _firestoreDatabaseService.saveUser(
         biography: userData['biography'] as String,
         name: userData['name'] as String,
-        majorInfo: userData['majorInfo'] as String,
-        clinicLocation: userData['clinicLocation'] as String,
-        clinicName: userData['clinicName'] as String,
         phoneNumber: userData['phoneNumber'] as String,
-        clinicOwner: userData['clinicOwner'] as bool,
         uid: userData['userId'] as String,
         fcmToken: userData['fcmToken'] as String,
       );
 
-      // Navigate to next screen or show success message
-      // Add your navigation logic here
+      await businessLogic.connectToSpotifyRemote();
+
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (context) => const OnboardingSlider()));
     } catch (e) {
       // Handle specific Firebase Auth errors
       String errorMessage = 'An error occurred during registration';
@@ -238,17 +237,41 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildSignUpButton() {
     return Column(
       children: [
+        Row(
+          children: [
+            Checkbox(
+              value: isTermsAccepted,
+              onChanged: (value) {
+                setState(() {
+                  isTermsAccepted = value!;
+                });
+              },
+            ),
+            GestureDetector(
+              onTap: () => _showTermsAndConditions(),
+              child: Text(
+                "I accept the terms and conditions",
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
         ElevatedButton(
-          onPressed: () {
-            if (formKey.currentState!.validate()) {
-              signUp().whenComplete(() {
-                Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const OnboardingSlider()));
-              });
-            }
-          },
+          onPressed: isTermsAccepted
+              ? () {
+                  if (formKey.currentState!.validate()) {
+                    signUp().whenComplete(() {
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) {
+                        return const OnboardingSlider();
+                      }));
+                    });
+                  }
+                }
+              : null,
           child: Text(
             "Sign Up",
             style: GoogleFonts.poppins(
@@ -284,6 +307,99 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showTermsAndConditions() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Terms and Conditions",
+                style: GoogleFonts.poppins(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Text(
+                    '''End User License Agreement (EULA) for Musee
+
+
+This End User License Agreement ("Agreement") is a legal agreement between you ("User") and Musee ("Company") regarding the use of the Musee dating app ("App"). By downloading, accessing, or using the App, you agree to be bound by the terms of this Agreement. If you do not agree, do not download, access, or use the App.
+
+1. License Grant
+
+The Company grants you a limited, non-exclusive, non-transferable, and revocable license to use the App for personal, non-commercial purposes in accordance with this Agreement.
+
+2. Eligibility
+
+The App is intended for individuals aged 18 years or older. By using the App, you confirm that you meet this age requirement.
+
+3. Usage Restrictions
+
+You agree not to:
+
+Post, share, or transmit explicit, offensive, or racist content.
+
+Harass, abuse, or harm other users.
+
+Use the App for any illegal purposes.
+
+Reverse-engineer, decompile, or modify the App.
+
+The Company reserves the right to suspend or terminate your account for violations of these terms.
+
+4. User-Generated Content
+
+You retain ownership of the content you upload to the App. By uploading content, you grant the Company a non-exclusive, royalty-free license to use, display, and distribute such content solely for operating the App.
+
+The Company reserves the right to monitor and remove inappropriate content at its discretion.
+
+5. In-App Purchases and Subscriptions
+
+The App offers a free version and optional in-app purchases. By making a purchase, you agree to the pricing, payment, and subscription terms presented at the time of purchase.
+
+Refunds will only be provided if the Company fails to deliver promised features due to its fault.
+
+6. Privacy and Data Collection
+
+The Company collects and processes personal data as outlined in its Privacy Policy. By using the App, you consent to the collection, processing, and sharing of your data in accordance with this policy.
+
+7. Disclaimer of Liability
+
+The App is provided "as is" and "as available" without warranties of any kind. The Company is not liable for any damages arising from:
+
+Misuse of the App.
+
+Matches or interactions between users.
+
+Service interruptions or errors.
+
+8. Termination
+
+The Company reserves the right to terminate your access to the App at any time for violations of this Agreement. Users may terminate their account by uninstalling the App.
+
+9. Updates and Changes
+
+The Company may update this Agreement from time to time. Continued use of the App after such updates constitutes acceptance of the new terms.''',
+                    style: GoogleFonts.poppins(fontSize: 16.sp),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

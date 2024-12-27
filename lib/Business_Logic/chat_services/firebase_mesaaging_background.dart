@@ -114,7 +114,7 @@ class NotificationService with WidgetsBindingObserver {
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     print("Received foreground message: ${message.messageId}");
 
-    final notificationDetails = const NotificationDetails(
+    const notificationDetails = NotificationDetails(
       android: AndroidNotificationDetails(
         'chat_messages',
         'Chat Messages',

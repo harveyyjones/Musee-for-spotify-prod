@@ -66,7 +66,7 @@ class BusinessLogic {
 
       if (!doc.exists || doc.data()?['tokens'] == null) {
         // First time user - needs to authenticate once
-        var authenticationToken = await SpotifySdk.getAccessToken(
+        accessToken = await SpotifySdk.getAccessToken(
             clientId: '32a50962636143748e6779e2f604e07b',
             redirectUrl: 'com-developer-spotifyproject://callback',
             scope: 'app-remote-control '
@@ -84,7 +84,7 @@ class BusinessLogic {
             .collection('tokens')
             .doc('spotify')
             .set({
-          'tokens': authenticationToken,
+          'tokens': accessToken,
           'lastUpdated': DateTime.now(),
         });
       }
@@ -372,21 +372,83 @@ class BusinessLogic {
     try {
       _loading = true;
 
+      // Set a timeout for the connection attempt
       var result = await SpotifySdk.connectToSpotifyRemote(
-          clientId: '32a50962636143748e6779e2f604e07b',
-          redirectUrl: 'com-developer-spotifyproject://callback');
+        clientId: '32a50962636143748e6779e2f604e07b',
+        redirectUrl: 'com-developer-spotifyproject://callback',
+        scope: 'app-remote-control '
+            'user-modify-playback-state '
+            'playlist-read-private '
+            'user-library-read '
+            'playlist-modify-public '
+            'user-read-currently-playing '
+            'user-top-read '
+            'user-read-recently-played',
+      ).timeout(Duration(seconds: 10), onTimeout: () {
+        _loading = false;
+        _businessLogic.setStatus('Connection timed out');
+        return false; // Return false to indicate failure
+      });
+
       _businessLogic.setStatus(result
           ? 'connect to spotify successful'
           : 'connect to spotify failed');
+
+      // Log the connection status in Firebase
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(FirebaseAuth.instance.currentUser?.uid)
+          .set({
+        'hasSpotify': result,
+      }, SetOptions(merge: true));
+
+      if (result) {
+        // Obtain the access token
+        accessToken = await SpotifySdk.getAccessToken(
+          clientId: '32a50962636143748e6779e2f604e07b',
+          redirectUrl: 'com-developer-spotifyproject://callback',
+          scope: 'app-remote-control '
+              'user-modify-playback-state '
+              'playlist-read-private '
+              'user-library-read '
+              'playlist-modify-public '
+              'user-read-currently-playing '
+              'user-top-read '
+              'user-read-recently-played',
+        );
+
+        // Store token in Firebase
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(FirebaseAuth.instance.currentUser?.uid)
+            .collection('tokens')
+            .doc('spotify')
+            .set({
+          'tokens': accessToken,
+          'lastUpdated': DateTime.now(),
+        });
+      }
       _loading = false;
     } on PlatformException catch (e) {
       _loading = false;
-
       _businessLogic.setStatus(e.code, message: e.message);
+      // Log the failure in Firebase
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(FirebaseAuth.instance.currentUser?.uid)
+          .set({
+        'hasSpotify': false,
+      }, SetOptions(merge: true));
     } on MissingPluginException {
       _loading = false;
-
       _businessLogic.setStatus('not implemented');
+      // Log the failure in Firebase
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(FirebaseAuth.instance.currentUser?.uid)
+          .set({
+        'hasSpotify': false,
+      }, SetOptions(merge: true));
     }
   }
 }
