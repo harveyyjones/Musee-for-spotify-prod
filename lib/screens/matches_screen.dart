@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,10 +10,12 @@ import 'package:spotify_project/Helpers/helpers.dart';
 import 'package:spotify_project/business/active_status_updater.dart';
 import 'package:spotify_project/screens/register_page.dart';
 import 'package:spotify_project/widgets/bottom_bar.dart';
+import 'package:spotify_sdk/models/player_state.dart';
 import 'package:spotify_sdk/spotify_sdk.dart';
 import 'package:swipe_cards/swipe_cards.dart';
 import 'package:spotify_project/screens/chat_screen.dart';
 import 'package:spotify_project/widgets/report_bottom_sheet_swipe.dart';
+import 'package:lottie/lottie.dart';
 
 class MatchesScreen extends StatefulWidget {
   const MatchesScreen({Key? key}) : super(key: key);
@@ -28,12 +31,32 @@ class _MatchesScreenState extends State<MatchesScreen>
   String? _errorMessage;
   bool _isLoading = true;
   List<dynamic>? _matchData;
+  bool _showCurrentTrack = true;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _initializeUserData();
     firestoreDatabaseService.updateActiveStatus();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer(Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _showCurrentTrack = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Future<void> _initializeUserData() async {
@@ -117,19 +140,30 @@ class _MatchesScreenState extends State<MatchesScreen>
   }
 
   Widget _buildMatchesWidget() {
-    if (_matchData == null || _matchData!.isEmpty) {
-      return _buildNoDataWidget(
-          "No matches found. Try listening to some music!");
-    }
-//  && _matchData![0].userId == currentUser?.uid  this is where we skip the users itself, I disable here for a while for debbuging.
-    // if (_matchData!.length == 1) {
-    //   return _buildNoDataWidget(
-    //       "There is no match yet, listen to some music or use quick match!");
-    // }
+    return StreamBuilder<PlayerState>(
+      stream: SpotifySdk.subscribePlayerState(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError || !_showCurrentTrack) {
+          // After 12 seconds or if there's an error, display the swipe cards or no data message
+          if (_matchData != null && _matchData!.isNotEmpty) {
+            return Container(
+              color: Color(0xFF2A2A2A),
+              child: SwipeCardWidget(snapshotData: _matchData!),
+            );
+          }
 
-    return Container(
-      color: Color(0xFF2A2A2A),
-      child: SwipeCardWidget(snapshotData: _matchData!),
+          return _buildNoDataWidget(
+              "No matches found. Try listening to some music!");
+        }
+
+        if (snapshot.hasData) {
+          final track = snapshot.data!.track!;
+          return displayPreSwipeCardWidget(track, context);
+        }
+
+        return const SizedBox
+            .shrink(); // Fallback in case of no data and no error
+      },
     );
   }
 
@@ -553,4 +587,113 @@ class _UserProfileCardState extends State<UserProfileCard> {
       ),
     );
   }
+}
+
+displayPreSwipeCardWidget(track, context) {
+  return Container(
+    width: MediaQuery.of(context).size.width,
+    height: MediaQuery.of(context).size.height,
+    margin: EdgeInsets.symmetric(vertical: 24.h),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white10,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        OverflowBox(
+          maxWidth: double.infinity,
+          maxHeight: double.infinity,
+          child: Lottie.network(
+            'https://lottie.host/9f08e4c6-e76a-497e-ab70-923762e1fa42/zWlSuTQeEP.json',
+            alignment: Alignment.center,
+            fit: BoxFit.cover,
+          ),
+        ),
+        FutureBuilder<Uint8List?>(
+          future: SpotifySdk.getImage(
+            imageUri: track.imageUri,
+            dimension: ImageDimension.large,
+          ),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              return Container(
+                width: 330.w,
+                height: 330.h,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  image: DecorationImage(
+                    image: MemoryImage(snapshot.data!),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              );
+            }
+            return Container(
+              width: 330.w,
+              height: 330.h,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white24,
+              ),
+              child: Center(child: Text('...')),
+            );
+          },
+        ),
+        Positioned(
+          bottom: 0,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              children: [
+                Text(
+                  track.name,
+                  style: GoogleFonts.poppins(
+                    fontSize: 30.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  track.artist.name.toString(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 30.sp,
+                    color: Colors.white70,
+                  ),
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          top: 60.h,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              children: [
+                Text(
+                  'Finding your match...',
+                  style: GoogleFonts.poppins(
+                    fontSize: 30.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                SizedBox(height: 4.h),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

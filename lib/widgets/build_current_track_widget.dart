@@ -25,6 +25,7 @@ class _BuildCurrentTrackWidgetState extends State<BuildCurrentTrackWidget> {
       if (mounted) {
         setState(() {
           // Put any state updates here
+          firestoreDatabaseService.updateActiveStatus();
         });
       }
     });
@@ -56,6 +57,8 @@ class _BuildCurrentTrackWidgetState extends State<BuildCurrentTrackWidget> {
         firestoreDatabaseService.updateIsUserListening(
           snapshot.data!.isPaused == false,
           track.name,
+          track.imageUri.toString(),
+          track.uri,
         );
         firestoreDatabaseService.updateActiveStatus();
 

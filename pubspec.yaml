@@ -72,6 +72,7 @@ dependencies:
   cached_network_image: ^3.2.3
   uni_links: ^0.5.1
   carousel_slider: ^5.0.0
+  lottie: ^2.7.0
 
 
 

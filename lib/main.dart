@@ -346,25 +346,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   final FirestoreDatabaseService firestoreDatabaseService =
       FirestoreDatabaseService();
 
-  // Add random listeners state
-  final Map<String, int> _currentListeners = {
-    'playlist1': 10,
-    'playlist2': 8,
-    'playlist3': 15,
-    'playlist4': 10,
-    'playlist5': 5,
-    'playlist6': 3,
+  // Use ValueNotifier for each playlist
+  final Map<String, ValueNotifier<int>> _currentListeners = {
+    'playlist1': ValueNotifier<int>(10),
+    'playlist2': ValueNotifier<int>(8),
+    'playlist3': ValueNotifier<int>(15),
   };
 
-  // Add separate timers for each playlist
-  Timer? _timer1;
-  Timer? _timer2;
-  Timer? _timer3;
-
-  // Add a timer for the modal bottom sheet
   Timer? _modalTimer;
-
-  // Initialize a counter to track the number of times the modal is shown
   int _modalShowCount = 0;
 
   @override
@@ -393,9 +382,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Initialize random listener counters with different intervals
     _startRandomUpdates();
-// *****************************  MODAL TIMER ***************************************
+
     _modalTimer = Timer.periodic(const Duration(hours: 12), (timer) {
       if (mounted && _modalShowCount < 2) {
         _showModalBottomSheetForHelp();
@@ -422,27 +410,24 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 
   void _startRandomUpdates() {
-    _timer1 = Timer.periodic(const Duration(seconds: 5), (timer) {
+    Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
-        setState(() {
-          _currentListeners['playlist1'] = Random().nextInt(15) + 5;
-        });
+        _currentListeners['playlist1']!.value = Random().nextInt(15) + 5;
+        print('Updated playlist1: ${_currentListeners['playlist1']!.value}');
       }
     });
 
-    _timer2 = Timer.periodic(const Duration(seconds: 6), (timer) {
+    Timer.periodic(const Duration(seconds: 6), (timer) {
       if (mounted) {
-        setState(() {
-          _currentListeners['playlist2'] = Random().nextInt(15) + 5;
-        });
+        _currentListeners['playlist2']!.value = Random().nextInt(15) + 5;
+        print('Updated playlist2: ${_currentListeners['playlist2']!.value}');
       }
     });
 
-    _timer3 = Timer.periodic(const Duration(seconds: 7), (timer) {
+    Timer.periodic(const Duration(seconds: 7), (timer) {
       if (mounted) {
-        setState(() {
-          _currentListeners['playlist3'] = Random().nextInt(15) + 5;
-        });
+        _currentListeners['playlist3']!.value = Random().nextInt(15) + 5;
+        print('Updated playlist3: ${_currentListeners['playlist3']!.value}');
       }
     });
   }
@@ -450,12 +435,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     _pulseController.dispose();
-    _timer1?.cancel();
-    _timer2?.cancel();
-    _timer3?.cancel();
-    _modalTimer?.cancel(); // Cancel the modal timer
+    _modalTimer?.cancel();
     firestoreDatabaseService.updateActiveStatus();
-
     super.dispose();
   }
 
@@ -837,426 +818,391 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildPlaylistContainer(String title, String subtitle, String imageUrl,
-      int listeners, String spotifyUri, String playlistURL) {
-    return GestureDetector(
-      onTap: () async {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          final tokenDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .collection('tokens')
-              .doc('spotify')
-              .get();
-
-          if (tokenDoc.exists) {
-            // User has a Spotify token, attempt to play the URI
-            try {
-              bool isConnected = await SpotifySdk.isSpotifyAppActive;
-              if (isConnected) {
-                await SpotifySdk.connectToSpotifyRemote(
-                  clientId: '32a50962636143748e6779e2f604e07b',
-                  redirectUrl: 'com-developer-spotifyproject://callback',
-                );
-                await SpotifySdk.play(
-                  spotifyUri: spotifyUri,
-                );
-              }
-            } catch (error) {
-              print('Error playing Spotify URI: $error');
-            }
-          } else {
-            // No token, launch the URL
-            if (await canLaunch(playlistURL)) {
-              await launch(playlistURL);
-            } else {
-              throw 'Could not launch $playlistURL';
-            }
-          }
+      ValueNotifier<int> listeners, String spotifyUri, String playlistURL) {
+    return FutureBuilder(
+      future: firestoreDatabaseService.hasSpotify(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
         }
-      },
-      child: TweenAnimationBuilder(
-        tween: Tween<double>(begin: 1, end: 1),
-        duration: const Duration(milliseconds: 200),
-        builder: (context, double value, child) {
-          return Transform.scale(
-            scale: value,
-            child: Container(
-              height: MediaQuery.of(context).size.height *
-                  0.25, // Responsive height
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(
-                    MediaQuery.of(context).size.width * 0.04),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 15,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(
-                    MediaQuery.of(context).size.width * 0.04),
-                child: Stack(
-                  children: [
-                    // Background Image
-                    Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
-                    // Gradient Overlay
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.7),
-                          ],
-                        ),
+        return GestureDetector(
+          onTap: () async {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user != null) {
+              final tokenDoc = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .collection('tokens')
+                  .doc('spotify')
+                  .get();
+
+              if (tokenDoc.exists) {
+                // User has a Spotify token, attempt to play the URI
+                try {
+                  bool isConnected = await SpotifySdk.isSpotifyAppActive;
+                  if (snapshot.data == true) {
+                    await SpotifySdk.connectToSpotifyRemote(
+                      clientId: '32a50962636143748e6779e2f604e07b',
+                      redirectUrl: 'com-developer-spotifyproject://callback',
+                    );
+                    await SpotifySdk.play(
+                      spotifyUri: spotifyUri,
+                    );
+                  } else {
+                    // No token, launch the URL
+                    if (await canLaunch(playlistURL)) {
+                      await launch(playlistURL);
+                    } else {
+                      throw 'Could not launch $playlistURL';
+                    }
+                  }
+                } catch (error) {
+                  print('Error playing Spotify URI: $error');
+                }
+              }
+            }
+          },
+          child: TweenAnimationBuilder(
+            tween: Tween<double>(begin: 1, end: 1),
+            duration: const Duration(milliseconds: 200),
+            builder: (context, double value, child) {
+              return Transform.scale(
+                scale: value,
+                child: Container(
+                  height: MediaQuery.of(context).size.height * 0.25,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(
+                        MediaQuery.of(context).size.width * 0.04),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 15,
+                        spreadRadius: 2,
                       ),
-                    ),
-                    // Frosted Glass Info Container
-                    Positioned(
-                      bottom: MediaQuery.of(context).size.height * 0.02,
-                      left: MediaQuery.of(context).size.width * 0.04,
-                      right: MediaQuery.of(context).size.width * 0.04,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                            MediaQuery.of(context).size.width * 0.03),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            padding: EdgeInsets.all(
-                                MediaQuery.of(context).size.width * 0.04),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(
-                                  MediaQuery.of(context).size.width * 0.03),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontSize:
-                                        MediaQuery.of(context).size.width *
-                                            0.06,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(
-                                    height: MediaQuery.of(context).size.height *
-                                        0.005),
-                                Text(
-                                  subtitle,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white70,
-                                    fontSize:
-                                        MediaQuery.of(context).size.width *
-                                            0.04,
-                                  ),
-                                ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(
+                        MediaQuery.of(context).size.width * 0.04),
+                    child: Stack(
+                      children: [
+                        Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.7),
                               ],
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    // Listener Count and Profile Circles
-                    Positioned(
-                      bottom: 35.h,
-                      right: 65.w,
-                      child: Container(
-                        // color: Colors.red,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Stacked Profile Circles
-                            // for (var i = 0; i < 3; i++)
-                            //   Transform.translate(
-                            //     offset: Offset(
-                            //         i *
-                            //             -MediaQuery.of(context).size.width *
-                            //             0.030,
-                            //         0),
-                            //     child: Container(
-                            //       width:
-                            //           MediaQuery.of(context).size.width * 0.07,
-                            //       height:
-                            //           MediaQuery.of(context).size.width * 0.07,
-                            //       decoration: BoxDecoration(
-                            //         shape: BoxShape.circle,
-                            //         border: Border.all(
-                            //             color: Colors.white, width: 2),
-                            //         image: DecorationImage(
-                            //           image: NetworkImage(
-                            //             'https://picsum.photos/seed/${i + 1}/100/100',
-                            //           ),
-                            //           fit: BoxFit.cover,
-                            //         ),
-                            //       ),
-                            //     ),
-                            //   ),
-                            // SizedBox(width: 0),
-                            // Listener Count Circle
-                            Container(
-                              width: MediaQuery.of(context).size.width * 0.07,
-                              height: MediaQuery.of(context).size.width * 0.07,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color.fromARGB(255, 255, 255, 255)
-                                    .withOpacity(0.2),
-                                border:
-                                    Border.all(color: Colors.white, width: 2),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '$listeners',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontSize:
-                                        MediaQuery.of(context).size.width *
-                                            0.03,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                        Positioned(
+                          bottom: MediaQuery.of(context).size.height * 0.02,
+                          left: MediaQuery.of(context).size.width * 0.04,
+                          right: MediaQuery.of(context).size.width * 0.04,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width * 0.03),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                padding: EdgeInsets.all(
+                                    MediaQuery.of(context).size.width * 0.04),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(
+                                      MediaQuery.of(context).size.width * 0.03),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontSize:
+                                            MediaQuery.of(context).size.width *
+                                                0.06,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                        height:
+                                            MediaQuery.of(context).size.height *
+                                                0.005),
+                                    Text(
+                                      subtitle,
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white70,
+                                        fontSize:
+                                            MediaQuery.of(context).size.width *
+                                                0.04,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                        // Listener Count Circle
+                        Positioned(
+                          bottom: 35.h,
+                          right: 65.w,
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: listeners,
+                            builder: (context, value, child) {
+                              return Container(
+                                width: MediaQuery.of(context).size.width * 0.07,
+                                height:
+                                    MediaQuery.of(context).size.width * 0.07,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color:
+                                      const Color.fromARGB(255, 255, 255, 255)
+                                          .withOpacity(0.2),
+                                  border:
+                                      Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '$value',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize:
+                                          MediaQuery.of(context).size.width *
+                                              0.03,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildHeadPlaylistContainer(String title, String subtitle,
-      String imageUrl, int listeners, String spotifyUri, String playlistURL) {
-    return GestureDetector(
-      onTap: () async {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          final tokenDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .collection('tokens')
-              .doc('spotify')
-              .get();
-
-          if (tokenDoc.exists) {
-            // User has a Spotify token, attempt to play the URI
-            try {
-              bool isConnected = await SpotifySdk.isSpotifyAppActive;
-              if (isConnected) {
-                await SpotifySdk.connectToSpotifyRemote(
-                  clientId: '32a50962636143748e6779e2f604e07b',
-                  redirectUrl: 'com-developer-spotifyproject://callback',
-                );
-                await SpotifySdk.play(
-                  spotifyUri: spotifyUri,
-                );
-              }
-            } catch (error) {
-              print('Error playing Spotify URI: $error');
-            }
-          } else {
-            // No token, launch the URL
-            if (await canLaunch(playlistURL)) {
-              await launch(playlistURL);
-            } else {
-              throw 'Could not launch $playlistURL';
-            }
+  Widget _buildHeadPlaylistContainer(
+      String title,
+      String subtitle,
+      String imageUrl,
+      ValueNotifier<int> listeners,
+      String spotifyUri,
+      String playlistURL) {
+    return FutureBuilder(
+        future: firestoreDatabaseService.hasSpotify(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox.shrink();
           }
-        }
-      },
-      child: TweenAnimationBuilder(
-        tween: Tween<double>(begin: 1, end: 1),
-        duration: const Duration(milliseconds: 200),
-        builder: (context, double value, child) {
-          return Transform.scale(
-            scale: value,
-            child: Container(
-              height: MediaQuery.of(context).size.height *
-                  0.25, // Responsive height
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(
-                    MediaQuery.of(context).size.width * 0.04),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 15,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(
-                    MediaQuery.of(context).size.width * 0.04),
-                child: Stack(
-                  children: [
-                    // Background Image
-                    Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
-                    // Gradient Overlay
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.7),
-                          ],
+          return GestureDetector(
+            onTap: () async {
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                final tokenDoc = await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .collection('tokens')
+                    .doc('spotify')
+                    .get();
+
+                if (tokenDoc.exists) {
+                  // User has a Spotify token, attempt to play the URI
+                  try {
+                    bool isConnected = await SpotifySdk.isSpotifyAppActive;
+                    if (isConnected) {
+                      await SpotifySdk.connectToSpotifyRemote(
+                        clientId: '32a50962636143748e6779e2f604e07b',
+                        redirectUrl: 'com-developer-spotifyproject://callback',
+                      );
+                      await SpotifySdk.play(
+                        spotifyUri: spotifyUri,
+                      );
+                    }
+                  } catch (error) {
+                    print('Error playing Spotify URI: $error');
+                  }
+                } else {
+                  // No token, launch the URL
+                  if (await canLaunch(playlistURL)) {
+                    await launch(playlistURL);
+                  } else {
+                    throw 'Could not launch $playlistURL';
+                  }
+                }
+              }
+            },
+            child: TweenAnimationBuilder(
+              tween: Tween<double>(begin: 1, end: 1),
+              duration: const Duration(milliseconds: 200),
+              builder: (context, double value, child) {
+                return Transform.scale(
+                  scale: value,
+                  child: Container(
+                    height: MediaQuery.of(context).size.height *
+                        0.25, // Responsive height
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(
+                          MediaQuery.of(context).size.width * 0.04),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 15,
+                          spreadRadius: 2,
                         ),
-                      ),
+                      ],
                     ),
-                    // Frosted Glass Info Container
-                    Positioned(
-                      bottom: MediaQuery.of(context).size.height * 0.02,
-                      left: MediaQuery.of(context).size.width * 0.04,
-                      right: MediaQuery.of(context).size.width * 0.04,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                            MediaQuery.of(context).size.width * 0.03),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            padding: EdgeInsets.all(
-                                MediaQuery.of(context).size.width * 0.04),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                          MediaQuery.of(context).size.width * 0.04),
+                      child: Stack(
+                        children: [
+                          // Background Image
+                          Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
+                          // Gradient Overlay
+                          Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(
-                                  MediaQuery.of(context).size.width * 0.03),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontSize:
-                                        MediaQuery.of(context).size.width *
-                                            0.06,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(
-                                    height: MediaQuery.of(context).size.height *
-                                        0.005),
-                                Text(
-                                  subtitle,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white70,
-                                    fontSize:
-                                        MediaQuery.of(context).size.width *
-                                            0.04,
-                                  ),
-                                ),
-                              ],
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.7),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-                    // Listener Count and Profile Circles
-                    Positioned(
-                      bottom: 35.h,
-                      right: 65.w,
-                      child: Container(
-                        // color: Colors.red,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Stacked Profile Circles
-                            // for (var i = 0; i < 3; i++)
-                            //   Transform.translate(
-                            //     offset: Offset(
-                            //         i *
-                            //             -MediaQuery.of(context).size.width *
-                            //             0.030,
-                            //         0),
-                            //     child: Container(
-                            //       width:
-                            //           MediaQuery.of(context).size.width * 0.07,
-                            //       height:
-                            //           MediaQuery.of(context).size.width * 0.07,
-                            //       decoration: BoxDecoration(
-                            //         shape: BoxShape.circle,
-                            //         border: Border.all(
-                            //             color: Colors.white, width: 2),
-                            //         image: DecorationImage(
-                            //           image: NetworkImage(
-                            //             'https://picsum.photos/seed/${i + 1}/100/100',
-                            //           ),
-                            //           fit: BoxFit.cover,
-                            //         ),
-                            //       ),
-                            //     ),
-                            //   ),
-                            // SizedBox(width: 0),
-                            // Listener Count Circle
-                            Container(
-                              width: MediaQuery.of(context).size.width * 0.07,
-                              height: MediaQuery.of(context).size.width * 0.07,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color.fromARGB(255, 255, 255, 255)
-                                    .withOpacity(0.2),
-                                border:
-                                    Border.all(color: Colors.white, width: 2),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '$listeners',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontSize:
+                          // Frosted Glass Info Container
+                          Positioned(
+                            bottom: MediaQuery.of(context).size.height * 0.02,
+                            left: MediaQuery.of(context).size.width * 0.04,
+                            right: MediaQuery.of(context).size.width * 0.04,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                  MediaQuery.of(context).size.width * 0.03),
+                              child: BackdropFilter(
+                                filter:
+                                    ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                child: Container(
+                                  padding: EdgeInsets.all(
+                                      MediaQuery.of(context).size.width * 0.04),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(
                                         MediaQuery.of(context).size.width *
-                                            0.03,
-                                    fontWeight: FontWeight.bold,
+                                            0.03),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        title,
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white,
+                                          fontSize: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.06,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                          height: MediaQuery.of(context)
+                                                  .size
+                                                  .height *
+                                              0.005),
+                                      Text(
+                                        subtitle,
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white70,
+                                          fontSize: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.04,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          // Listener Count and Profile Circles
+                          Positioned(
+                            bottom: 35.h,
+                            right: 65.w,
+                            child: ValueListenableBuilder<int>(
+                              valueListenable: listeners,
+                              builder: (context, value, child) {
+                                return Container(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.07,
+                                  height:
+                                      MediaQuery.of(context).size.width * 0.07,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color:
+                                        const Color.fromARGB(255, 255, 255, 255)
+                                            .withOpacity(0.2),
+                                    border: Border.all(
+                                        color: Colors.white, width: 2),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '$value',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontSize:
+                                            MediaQuery.of(context).size.width *
+                                                0.03,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           );
-        },
-      ),
-    );
+        });
   }
 
   Widget _buildCarouselSlider() {
     return CarouselSlider(
       options: CarouselOptions(
         height: MediaQuery.of(context).size.height * 0.3,
-        autoPlay: true,
+        autoPlay: false,
         enlargeCenterPage: true,
         aspectRatio: 16 / 9,
         viewportFraction: 0.8,
@@ -1266,7 +1212,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           'Sanah',
           'Listen and match now.',
           'https://lh3.googleusercontent.com/2Bj5TXHtxa_4cwpwXcX_7gk01u5j75DF3wHfkwVxjlbtZiqqU6MWBMeviAJZnwS7TKEZA32xl12oXhI=w2880-h1200-p-l90-rj',
-          _currentListeners['playlist5']!,
+          _currentListeners['playlist3']!,
           '37i9dQZF1DZ06evO0t5nsR',
           'https://open.spotify.com/playlist/37i9dQZF1DZ06evO0t5nsR',
         ),
@@ -1274,7 +1220,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           'Sobel',
           'Feel the heat.',
           'https://i.wpimg.pl/1200x/filerepo.grupawp.pl/api/v1/display/embed/3307d813-3714-41c9-9663-83cf69ccdd09',
-          _currentListeners['playlist6']!,
+          _currentListeners['playlist3']!,
           '56VhOZOF6hwqrbNYwkmcsH',
           'https://open.spotify.com/artist/56VhOZOF6hwqrbNYwkmcsH',
         ),

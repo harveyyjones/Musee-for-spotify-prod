@@ -486,14 +486,17 @@ class FirestoreDatabaseService extends BusinessLogic {
     }
   }
 
-  Future<void> updateIsUserListening(bool isPlaying, String songName) async {
+  Future<void> updateIsUserListening(
+      bool isPlaying, String songName, String image, String? spotifyUri) async {
     if (currentUser == null) return;
 
     try {
       await _instance.collection("users").doc(currentUser!.uid).update({
         "isUserListening": isPlaying,
         "songName": songName,
-        "lastUpdated": FieldValue.serverTimestamp()
+        "lastUpdated": FieldValue.serverTimestamp(),
+        "currentlyListeningSongImage": image,
+        "currentlyListeningSongSpotifyUri": spotifyUri,
       });
     } catch (e) {
       print('Error updating user listening status: $e');
@@ -713,6 +716,27 @@ class FirestoreDatabaseService extends BusinessLogic {
     return usersList;
   }
 
+  Stream<List<Map<String, dynamic>>> getPreviousMatchesListAsStream() {
+    return _instance
+        .collection("matches")
+        .doc(currentUser!.uid)
+        .collection("previousMatchesList")
+        .where("isLiked", isNull: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      List<Map<String, dynamic>> usersList = [];
+      for (var item in snapshot.docs) {
+        DocumentSnapshot<Map<String, dynamic>> okunanUser =
+            await FirebaseFirestore.instance.doc("users/${item["uid"]}").get();
+        Map<String, dynamic>? okunanUserbilgileriMap = okunanUser.data();
+        if (okunanUserbilgileriMap != null) {
+          usersList.add(okunanUserbilgileriMap);
+        }
+      }
+      return usersList;
+    });
+  }
+
   getTheMutualSongViaUIdOfTheMatch(uid) async {
     // Ortak bir şey dinlediğimiz kişilerle hangi şarkıda eşleştiğimizi ve metadatasini döndüren metod.
     Map<String, dynamic> mutualSongData = {};
@@ -875,7 +899,7 @@ class FirestoreDatabaseService extends BusinessLogic {
               print("Image of the album: $image");
 
               if (songName != null) {
-                updateIsUserListening(isPlaying, songName);
+                updateIsUserListening(isPlaying, songName, image, spotifyUri);
                 getUserDatasToMatch(
                     songName: songName,
                     amIListeningNow: isPlaying,
@@ -1629,5 +1653,17 @@ class FirestoreDatabaseService extends BusinessLogic {
       print('Error fetching hobbies: $e');
       return [];
     }
+  }
+
+  Future<bool> hasSpotify() async {
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .get();
+
+    if (userDoc.exists) {
+      return userDoc.data()?['hasSpotify'] ?? false;
+    }
+    return false;
   }
 }
