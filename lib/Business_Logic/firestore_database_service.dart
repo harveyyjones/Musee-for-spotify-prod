@@ -47,15 +47,25 @@ class FirestoreDatabaseService extends BusinessLogic {
     return okunanUserBilgileriNesne;
   }
 
-  Future<UserModel> getUserDataForDetailPage([uid]) async {
+  Future<UserModel?> getUserDataForDetailPage([String? uid]) async {
     // Başkasının profilini incelerken veri çekmeye yarıyor.
-    DocumentSnapshot<Map<String, dynamic>> okunanUser =
-        await FirebaseFirestore.instance.doc("users/${uid}").get();
-    Map<String, dynamic>? okunanUserbilgileriMap = okunanUser.data();
-    UserModel okunanUserBilgileriNesne =
-        UserModel.fromMap(okunanUserbilgileriMap!);
-    print(okunanUserBilgileriNesne.name.toString());
-    return okunanUserBilgileriNesne;
+    try {
+      DocumentSnapshot<Map<String, dynamic>> okunanUser =
+          await FirebaseFirestore.instance.doc("users/${uid}").get();
+      Map<String, dynamic>? okunanUserbilgileriMap = okunanUser.data();
+
+      if (okunanUserbilgileriMap != null) {
+        UserModel okunanUserBilgileriNesne =
+            UserModel.fromMap(okunanUserbilgileriMap);
+        print(okunanUserBilgileriNesne.name.toString());
+        return okunanUserBilgileriNesne;
+      } else {
+        print('User data is null for uid: $uid');
+      }
+    } catch (e) {
+      print('Error fetching user data for uid: $uid - $e');
+    }
+    return null;
   }
 
   Future<UserModel?> getUserDataForMessageBox(uid) async {
@@ -684,7 +694,7 @@ class FirestoreDatabaseService extends BusinessLogic {
             currentMatch.data()?["uid"].toString());
         print(
             "********************* CURRENT MATCHES: ********************************");
-        print(userData.toMap());
+        print(userData?.toMap());
         return userData;
       }
     } catch (e) {
@@ -798,8 +808,8 @@ class FirestoreDatabaseService extends BusinessLogic {
 
     // Process quickMatchesList
     for (var item in quickMatchesRef.docs) {
-      UserModel userModel = await getUserDataForDetailPage(item["uid"]);
-      if (!await _isUserBlocked(userModel.userId!)) {
+      UserModel? userModel = await getUserDataForDetailPage(item["uid"]);
+      if (userModel != null && !await _isUserBlocked(userModel.userId!)) {
         // Check if user with this ID already exists in the set
         if (!likedPeople
             .any((existingUser) => existingUser.userId == userModel.userId)) {
@@ -810,8 +820,8 @@ class FirestoreDatabaseService extends BusinessLogic {
 
     // Process previousMatchesList
     for (var item in previousMatchesRef.docs) {
-      UserModel userModel = await getUserDataForDetailPage(item["uid"]);
-      if (!await _isUserBlocked(userModel.userId!)) {
+      UserModel? userModel = await getUserDataForDetailPage(item["uid"]);
+      if (userModel != null && !await _isUserBlocked(userModel.userId!)) {
         // Check if user with this ID already exists in the set
         if (!likedPeople
             .any((existingUser) => existingUser.userId == userModel.userId)) {
@@ -871,8 +881,10 @@ class FirestoreDatabaseService extends BusinessLogic {
       if ((quickMatchDoc.exists && quickMatchDoc.get('isLiked') == true) ||
           (previousMatchDoc.exists &&
               previousMatchDoc.get('isLiked') == true)) {
-        UserModel userModel = await getUserDataForDetailPage(userId);
-        peopleWhoLikedMe.add(userModel);
+        UserModel? userModel = await getUserDataForDetailPage(userId);
+        if (userModel != null) {
+          peopleWhoLikedMe.add(userModel);
+        }
       }
     }
 
@@ -1392,7 +1404,7 @@ class FirestoreDatabaseService extends BusinessLogic {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       // Get FCM token
-      final fcmToken = await FirebaseMessaging.instance.getToken();
+      final fcmToken = await FirebaseMessaging.instance.getAPNSToken();
 
       // Save it to user document
       await FirebaseFirestore.instance
@@ -1665,5 +1677,62 @@ class FirestoreDatabaseService extends BusinessLogic {
       return userDoc.data()?['hasSpotify'] ?? false;
     }
     return false;
+  }
+
+  Future<List<UserModel>> fetchUsersWithLocation() async {
+    List<UserModel> usersWithLocation = [];
+    try {
+      print('📍 Fetching users with location and visibility enabled');
+
+      // Query users with location AND isVisibleOnMap = true
+      QuerySnapshot<Map<String, dynamic>> querySnapshot = await _fireStore
+          .collection('users')
+          .where('location', isNotEqualTo: null)
+          .where('isVisibleOnMap', isEqualTo: true)
+          .where('isVisibleOnMap', isNotEqualTo: null)
+          .get();
+
+      print(
+          '📊 Found ${querySnapshot.docs.length} visible users with location');
+
+      // Iterate over each document and fetch user data
+      for (var doc in querySnapshot.docs) {
+        String userId = doc.id;
+        print('🔄 Processing user: $userId');
+
+        UserModel? userData = await getUserDataForDetailPage(userId);
+        if (userData != null) {
+          print(
+              '✅ Added user ${userData.name ?? userId} to visible users list');
+          usersWithLocation.add(userData);
+        }
+      }
+
+      print('✨ Returning ${usersWithLocation.length} visible users');
+    } catch (e) {
+      print('❌ Error fetching users with location: $e');
+      print('Stack trace: ${StackTrace.current}');
+    }
+
+    return usersWithLocation;
+  }
+
+  Future<String?> getAccountState(String userId) async {
+    try {
+      // Reference to the user's reported document
+      DocumentSnapshot<Map<String, dynamic>> reportedDoc =
+          await _fireStore.collection('reported').doc(userId).get();
+
+      // Check if the document exists and has a count greater than 2
+      if (reportedDoc.exists) {
+        Map<String, dynamic>? data = reportedDoc.data();
+        if (data != null && data['count'] > 2) {
+          return data['reason'] as String?;
+        }
+      }
+    } catch (e) {
+      print('Error checking account state: $e');
+    }
+    return null;
   }
 }

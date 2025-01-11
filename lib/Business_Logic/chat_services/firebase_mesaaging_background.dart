@@ -84,7 +84,7 @@ class NotificationService with WidgetsBindingObserver {
     });
 
     // Get and save FCM token
-    final token = await _fcm.getToken();
+    final token = await _fcm.getAPNSToken();
     if (token != null) {
       await _saveFcmToken(token);
     }

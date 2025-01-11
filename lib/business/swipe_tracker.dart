@@ -7,8 +7,8 @@ import 'package:spotify_project/business/subscription_service.dart';
 class SwipeTracker extends FirestoreDatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String? _userId = FirebaseAuth.instance.currentUser?.uid;
-  // FIXME: let it stay below for debugging.
-  static const int MAX_FREE_SWIPES = 105;
+  // TODO: let it stay below for debugging.
+  static const int MAX_FREE_SWIPES = 100;
 
   Future<void> trackSwipe({required bool isLike}) async {
     if (_userId == null) return;
@@ -133,6 +133,19 @@ class SwipeTracker extends FirestoreDatabaseService {
       List<Map<String, dynamic>> commonSongs = [];
       int commonSongsCount = 0;
 
+      // Fetch hobbies
+      List<String> hobbies = [];
+      final hobbiesDoc = await _firestore
+          .collection("users")
+          .doc(doc.id)
+          .collection("interests")
+          .doc("hobbies")
+          .get();
+
+      if (hobbiesDoc.exists && hobbiesDoc.data()?['hobbies'] != null) {
+        hobbies = List<String>.from(hobbiesDoc.data()?['hobbies']);
+      }
+
       // Check for common songs if current user has saved tracks
       if (currentUserTracks.exists &&
           currentUserTracks.data()?['tracks'] != null) {
@@ -172,6 +185,7 @@ class SwipeTracker extends FirestoreDatabaseService {
         user: user,
         commonSongs: commonSongs,
         commonSongsCount: commonSongsCount,
+        hobbies: hobbies,
       ));
     }
 

@@ -229,28 +229,21 @@ class _ChatScreenState extends State<ChatScreen> with ActiveStatusUpdater {
                                     ),
                                     allMessages.isEmpty
                                         ? const SizedBox()
-                                        : Padding(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 16.w,
-                                                vertical: 16.h),
-                                            child: ListView.builder(
-                                              shrinkWrap: true,
-                                              physics:
-                                                  const NeverScrollableScrollPhysics(),
-                                              itemCount: allMessages.length,
-                                              itemBuilder: (context, index) {
-                                                final message =
-                                                    allMessages[index];
-                                                if (message.message!
-                                                    .startsWith('@@@')) {
-                                                  return _buildSongMessage(
-                                                      message);
-                                                } else {
-                                                  return _buildRegularMessage(
-                                                      message);
-                                                }
-                                              },
-                                            ),
+                                        : ListView.builder(
+                                            shrinkWrap: true,
+                                            itemCount: allMessages.length,
+                                            itemBuilder: (context, index) {
+                                              final message =
+                                                  allMessages[index];
+                                              if (message.message!
+                                                  .startsWith('@@@')) {
+                                                return _buildSongMessage(
+                                                    message);
+                                              } else {
+                                                return _buildRegularMessage(
+                                                    message);
+                                              }
+                                            },
                                           ),
                                   ],
                                 ),

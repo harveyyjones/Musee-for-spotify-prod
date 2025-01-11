@@ -8,11 +8,13 @@ import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:spotify_project/Business_Logic/Models/spotify_refresh_token_response_model.dart';
 import 'package:spotify_project/Business_Logic/firestore_database_service.dart';
+import 'package:spotify_project/business/Spotify_Logic/Models/top_10_track_model.dart';
 import 'package:spotify_project/business/Spotify_Logic/constants.dart';
 import 'package:spotify_sdk/spotify_sdk.dart';
 import 'package:http/http.dart' as http;
 import 'package:uni_links/uni_links.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class BusinessLogic {
   final Logger _logger = Logger(
@@ -67,8 +69,8 @@ class BusinessLogic {
       if (!doc.exists || doc.data()?['tokens'] == null) {
         // First time user - needs to authenticate once
         accessToken = await SpotifySdk.getAccessToken(
-            clientId: '32a50962636143748e6779e2f604e07b',
-            redirectUrl: 'com-developer-spotifyproject://callback',
+            clientId: dotenv.env['SPOTIFY_CLIENT_ID']!,
+            redirectUrl: dotenv.env['SPOTIFY_REDIRECT_URL']!,
             scope: 'app-remote-control '
                 'user-modify-playback-state '
                 'playlist-read-private '
@@ -374,8 +376,8 @@ class BusinessLogic {
 
       // Set a timeout for the connection attempt
       var result = await SpotifySdk.connectToSpotifyRemote(
-        clientId: '32a50962636143748e6779e2f604e07b',
-        redirectUrl: 'com-developer-spotifyproject://callback',
+        clientId: dotenv.env['SPOTIFY_CLIENT_ID']!,
+        redirectUrl: dotenv.env['SPOTIFY_REDIRECT_URL']!,
         scope: 'app-remote-control '
             'user-modify-playback-state '
             'playlist-read-private '
@@ -405,8 +407,8 @@ class BusinessLogic {
       if (result) {
         // Obtain the access token
         accessToken = await SpotifySdk.getAccessToken(
-          clientId: '32a50962636143748e6779e2f604e07b',
-          redirectUrl: 'com-developer-spotifyproject://callback',
+          clientId: dotenv.env['SPOTIFY_CLIENT_ID']!,
+          redirectUrl: dotenv.env['SPOTIFY_REDIRECT_URL']!,
           scope: 'app-remote-control '
               'user-modify-playback-state '
               'playlist-read-private '
@@ -449,6 +451,39 @@ class BusinessLogic {
           .set({
         'hasSpotify': false,
       }, SetOptions(merge: true));
+    }
+  }
+
+  Future<List<Map<String, dynamic>>?> getTopArtistsFromFirebase(String uid,
+      {bool isForProfileScreen = false}) async {
+    try {
+      accessToken = await SpotifySdk.getAccessToken(
+          clientId: dotenv.env['SPOTIFY_CLIENT_ID']!,
+          redirectUrl: dotenv.env['SPOTIFY_REDIRECT_URL']!,
+          scope: 'app-remote-control '
+              'user-modify-playback-state '
+              'playlist-read-private '
+              'user-library-read '
+              'playlist-modify-public '
+              'user-read-currently-playing '
+              'user-top-read '
+              'user-read-recently-played');
+    } catch (e) {
+      print('Error fetching top artists: $e');
+      return null;
+    }
+  }
+
+  Future<List<SpotifyTrackFromSpotify>?> getTopTracksFromFirebase(String uid,
+      {bool isForProfileScreen = false}) async {
+    try {
+      getInitialTokens(
+          dotenv.env['SPOTIFY_CLIENT_ID']!,
+          dotenv.env['SPOTIFY_CLIENT_SECRET']!,
+          dotenv.env['SPOTIFY_REDIRECT_URL']!);
+    } catch (e) {
+      print('Error fetching top tracks: $e');
+      return null;
     }
   }
 }

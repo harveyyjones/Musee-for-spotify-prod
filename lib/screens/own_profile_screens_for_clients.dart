@@ -128,7 +128,6 @@ class _OwnProfileScreenForClientsState
                     child: SizedBox(height: 20.h),
                   ),
                   shareYourInterestButton(context),
-                  //  TODO: add the share interest button here
                   // Top Artists (Spotify)
                   SliverToBoxAdapter(child: SizedBox(height: 20.h)),
                   SliverToBoxAdapter(
@@ -272,7 +271,7 @@ class _OwnProfileScreenForClientsState
             bottom: 0,
             left: 0,
             right: 0,
-            child: BottomBar(selectedIndex: 2),
+            child: BottomBar(selectedIndex: 3),
           ),
 
           // Add a button for debugging

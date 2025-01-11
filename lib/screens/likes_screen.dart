@@ -74,7 +74,7 @@ class _LikesScreenState extends State<LikesScreen> {
                 );
               },
             ),
-            bottomNavigationBar: BottomBar(selectedIndex: 4),
+            bottomNavigationBar: BottomBar(selectedIndex: 5),
           );
         });
   }
@@ -82,7 +82,7 @@ class _LikesScreenState extends State<LikesScreen> {
   Widget _buildUserItem(UserModel user) {
     return GestureDetector(
       onTap: () {
-        if (isSubscriptionActive) {
+        if (true) {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -113,7 +113,7 @@ class _LikesScreenState extends State<LikesScreen> {
             children: [
               Positioned.fill(
                 child: ImageFiltered(
-                  imageFilter: isSubscriptionActive
+                  imageFilter: true
                       ? ImageFilter.blur(sigmaX: 0, sigmaY: 0)
                       : ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                   child: Image.network(
@@ -151,7 +151,7 @@ class _LikesScreenState extends State<LikesScreen> {
                   ),
                 ),
               ),
-              if (!isSubscriptionActive)
+              if (false)
                 Positioned.fill(
                   child: Container(
                     color: Colors.black.withOpacity(0.3),

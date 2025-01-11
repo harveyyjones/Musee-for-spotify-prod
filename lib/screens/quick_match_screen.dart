@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:spotify_project/Business_Logic/Models/user_model.dart';
@@ -142,7 +143,7 @@ class _QuickMatchesScreenState extends State<QuickMatchesScreen> {
                 if (!canSwipe) {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
+                    CupertinoPageRoute(
                       builder: (context) => const SubscribePremiumScreen(),
                     ),
                   );

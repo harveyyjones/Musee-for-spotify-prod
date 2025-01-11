@@ -25,6 +25,8 @@ class _ReportBottomSheetSwipeCardState
     'Inappropriate Content',
     'Spam',
     'Fake Profile',
+    'Content Promoter',
+    'Scam',
     'Other'
   ];
   String? _selectedReason;

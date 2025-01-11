@@ -109,19 +109,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           body: Stack(
             children: [
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF1A1A1A),
-                      Colors.black,
-                      Color(0xFF1A1A1A),
-                    ],
-                  ),
-                ),
-              ),
               CustomScrollView(
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
@@ -147,8 +134,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           height: MediaQuery.of(context).size.height * 0.75,
           child: Stack(
             children: [
-              _buildProfileImages(userData),
               _buildGradientOverlay(),
+              _buildProfileImages(userData),
               _buildProfileInfo(userData),
               _buildBackButton(),
               _buildImageIndicators(userData.profilePhotos?.length ?? 1),
@@ -682,11 +669,10 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     return Stack(
       children: [
-        // 1. Main Image PageView
+        // Main Image PageView
         SizedBox(
           height: MediaQuery.of(context).size.height * 0.55,
           child: PageView.builder(
-            physics: NeverScrollableScrollPhysics(),
             controller: _pageController,
             itemCount: profilePhotos.length,
             onPageChanged: (index) =>
@@ -702,37 +688,25 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ),
 
-        // 2. Gradient Overlay
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.2),
-                  Colors.black.withOpacity(0.8),
-                ],
-                stops: const [0.0, 0.5, 1.0],
-              ),
-            ),
-          ),
-        ),
-
-        // 3. Gesture Detection Layer (now above gradient)
+        // Gesture Detection Layer
         if (profilePhotos.length > 1)
           Positioned.fill(
             child: Row(
               children: [
+                // Left side tap detection
                 Expanded(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTapDown: (_) {
+                    onTap: () {
+                      print("Left side tapped");
                       if (_currentImageIndex > 0) {
                         setState(() {
                           _currentImageIndex--;
-                          _pageController.jumpToPage(_currentImageIndex);
+                          _pageController.animateToPage(
+                            _currentImageIndex,
+                            duration: Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
                         });
                       }
                     },
@@ -741,14 +715,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ),
                 ),
+                // Right side tap detection
                 Expanded(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTapDown: (_) {
+                    onTap: () {
+                      print("Right side tapped");
                       if (_currentImageIndex < profilePhotos.length - 1) {
                         setState(() {
                           _currentImageIndex++;
-                          _pageController.jumpToPage(_currentImageIndex);
+                          _pageController.animateToPage(
+                            _currentImageIndex,
+                            duration: Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
                         });
                       }
                     },
@@ -758,31 +738,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ),
               ],
-            ),
-          ),
-
-        // 4. Image Indicators (top layer)
-        if (profilePhotos.length > 1)
-          Positioned(
-            top: 40.h,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                profilePhotos.length,
-                (index) => Container(
-                  margin: EdgeInsets.symmetric(horizontal: 4.w),
-                  width: 8.w,
-                  height: 8.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _currentImageIndex == index
-                        ? Color(0xFF6366F1)
-                        : Colors.white.withOpacity(0.5),
-                  ),
-                ),
-              ),
             ),
           ),
       ],

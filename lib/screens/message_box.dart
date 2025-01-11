@@ -67,7 +67,7 @@ class _MessageScreenState extends State<MessageScreen> {
               ),
             ),
           ),
-          bottomNavigationBar: BottomBar(selectedIndex: 3),
+          bottomNavigationBar: BottomBar(selectedIndex: 4),
         );
       },
     );

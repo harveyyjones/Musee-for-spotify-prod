@@ -45,7 +45,6 @@ class _ShareableImagesForMarketingState
     _fetchAndLogSavedTracks();
 
     // Take screenshot and show it in a dialog after a short delay
-    // TODO: uncomment below code to take screenshot.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         Future.delayed(const Duration(milliseconds: 500), () {

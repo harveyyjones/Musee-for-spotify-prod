@@ -128,7 +128,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ));
         print('Payment was successful');
 
-        // TODO: Add the logic to update the user's subscription status
         _firestoreDatabaseService.updatePaymentDuration();
       } else if (mounted) {
         print('Payment was not successful');

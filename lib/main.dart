@@ -17,6 +17,7 @@ import 'package:spotify_project/business/payment_service/payment_screen.dart';
 import 'package:spotify_project/business/subscription_service.dart';
 import 'package:spotify_project/business/payment_service/payment_service.dart';
 import 'package:spotify_project/god%20mode/firebase_god_mode.dart';
+import 'package:spotify_project/screens/find_near_listeners_map_screen.dart';
 import 'package:spotify_project/screens/landing_screen.dart';
 import 'package:spotify_project/screens/message_box.dart';
 import 'package:spotify_project/screens/own_profile_screens_for_clients.dart';
@@ -69,69 +70,17 @@ void main() async {
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
       name: "musee",
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyDsdh0mRQyMiH3bgZbBDPr6h880C39al0g",
-        appId: "1:985372741706:ios:80007bd7b8a5a5daff96b3",
-        messagingSenderId: "985372741706",
-        projectId: "musee-285eb",
-        storageBucket: "gs://musee-285eb.appspot.com",
+      options: FirebaseOptions(
+        apiKey: dotenv.env['FIREBASE_API_KEY']!,
+        appId: dotenv.env['FIREBASE_APP_ID']!,
+        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+        projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
       ),
     );
   }
 
   await initializeFirebaseMessaging();
-
-  // Initialize Spotify connection
-
-  // try {
-  //   // Only try to get/refresh token if user is logged in
-  //   if (FirebaseAuth.instance.currentUser != null) {
-  //     final tokenDoc = await FirebaseFirestore.instance
-  //         .collection('users')
-  //         .doc(FirebaseAuth.instance.currentUser?.uid)
-  //         .collection('tokens')
-  //         .doc('spotify')
-  //         .get();
-
-  //     if (tokenDoc.exists) {
-  //       // We have a token, check if it's still valid
-  //       final lastUpdated =
-  //           (tokenDoc.data()?['lastUpdated'] as Timestamp).toDate();
-  //       if (DateTime.now().difference(lastUpdated).inMinutes < 50) {
-  //         // Token still valid, use it
-  //         accessToken = tokenDoc.data()?['tokens'];
-  //       } else {
-  //         // Token expired, get new one
-  //         accessToken = await SpotifySdk.getAccessToken(
-  //             clientId: '32a50962636143748e6779e2f604e07b',
-  //             redirectUrl: 'com-developer-spotifyproject://callback',
-  //             scope: 'app-remote-control '
-  //                 'user-modify-playback-state '
-  //                 'playlist-read-private '
-  //                 'user-library-read '
-  //                 'playlist-modify-public '
-  //                 'user-read-currently-playing '
-  //                 'user-top-read');
-
-  //         // Update token in Firebase
-  //         await FirebaseFirestore.instance
-  //             .collection('users')
-  //             .doc(FirebaseAuth.instance.currentUser?.uid)
-  //             .collection('tokens')
-  //             .doc('spotify')
-  //             .set({
-  //           'tokens': accessToken,
-  //           'lastUpdated': DateTime.now(),
-  //         });
-  //       }
-  //     }
-  //     // If token doc doesn't exist, we'll get it when user navigates to search screen
-  //   }
-
-  //   //
-  // } catch (e) {
-  //   print('Error initializing Spotify: $e');
-  // }
 
   final subscriptionService = SubscriptionService();
   await subscriptionService.checkSubscriptionStatus();
@@ -200,7 +149,7 @@ Future<void> initializeFirebaseMessaging() async {
       ?.createNotificationChannel(channel);
 
   // Get initial token
-  String? initialToken = await FirebaseMessaging.instance.getToken();
+  String? initialToken = await FirebaseMessaging.instance.getAPNSToken();
   print('Initial FCM Token: $initialToken');
 
   // Handle foreground messages
@@ -239,7 +188,7 @@ Future<void> initializeFirebaseMessaging() async {
 
   FirebaseAuth.instance.authStateChanges().listen((User? user) async {
     if (user != null) {
-      final token = await FirebaseMessaging.instance.getToken();
+      final token = await FirebaseMessaging.instance.getAPNSToken();
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -585,7 +534,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                 height: 47.h,
               ),
               title: Text(
-                'Contact us.',
+                'Contact.',
                 style: GoogleFonts.poppins(fontSize: 33.sp),
               ),
               onTap: () {
@@ -630,7 +579,15 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
               vertical: MediaQuery.of(context).size.height * 0.03,
             ),
             children: [
-              SizedBox(height: MediaQuery.of(context).size.height * 0.04),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 50.w,
+                  ),
+                ],
+              ),
+              SizedBox(height: 15.h),
               Row(
                 children: [
                   Expanded(child: _buildQuickMatchButton()),
@@ -638,7 +595,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                   Expanded(child: _buildBoostButton()),
                 ],
               ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+              SizedBox(height: 15.h),
               _buildCarouselSlider(),
               SizedBox(height: MediaQuery.of(context).size.height * 0.03),
               _buildPlaylistContainer(
@@ -1199,40 +1156,97 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildCarouselSlider() {
-    return CarouselSlider(
-      options: CarouselOptions(
-        height: MediaQuery.of(context).size.height * 0.3,
-        autoPlay: false,
-        enlargeCenterPage: true,
-        aspectRatio: 16 / 9,
-        viewportFraction: 0.8,
-      ),
-      items: [
-        _buildHeadPlaylistContainer(
-          'Sanah',
-          'Listen and match now.',
-          'https://lh3.googleusercontent.com/2Bj5TXHtxa_4cwpwXcX_7gk01u5j75DF3wHfkwVxjlbtZiqqU6MWBMeviAJZnwS7TKEZA32xl12oXhI=w2880-h1200-p-l90-rj',
-          _currentListeners['playlist3']!,
-          '37i9dQZF1DZ06evO0t5nsR',
-          'https://open.spotify.com/playlist/37i9dQZF1DZ06evO0t5nsR',
-        ),
-        _buildHeadPlaylistContainer(
-          'Sobel',
-          'Feel the heat.',
-          'https://i.wpimg.pl/1200x/filerepo.grupawp.pl/api/v1/display/embed/3307d813-3714-41c9-9663-83cf69ccdd09',
-          _currentListeners['playlist3']!,
-          '56VhOZOF6hwqrbNYwkmcsH',
-          'https://open.spotify.com/artist/56VhOZOF6hwqrbNYwkmcsH',
-        ),
-        _buildHeadPlaylistContainer(
-          "90's Indie",
-          'Find the tempo.',
-          'https://media.npr.org/assets/img/2014/04/04/42-16783402_custom-5d1259268e5d2bc96bc5aec1dc07a17917937ef8.jpg',
-          _currentListeners['playlist3']!,
-          '7pDYHhlAulEmE68iW83zU1',
-          'https://open.spotify.com/playlist/7pDYHhlAulEmE68iW83zU1',
+    return Column(
+      children: [
+        // Add the chip button here
+        SizedBox(height: 15.h), // Space between carousel and button
+        CarouselSlider(
+          options: CarouselOptions(
+            height: MediaQuery.of(context).size.height * 0.3,
+            autoPlay: false,
+            enlargeCenterPage: true,
+            aspectRatio: 16 / 9,
+            viewportFraction: 0.8,
+          ),
+          items: [
+            _buildHeadPlaylistContainer(
+              'Sanah',
+              'Listen and match now.',
+              'https://lh3.googleusercontent.com/2Bj5TXHtxa_4cwpwXcX_7gk01u5j75DF3wHfkwVxjlbtZiqqU6MWBMeviAJZnwS7TKEZA32xl12oXhI=w2880-h1200-p-l90-rj',
+              _currentListeners['playlist3']!,
+              '37i9dQZF1DZ06evO0t5nsR',
+              'https://open.spotify.com/playlist/37i9dQZF1DZ06evO0t5nsR',
+            ),
+            _buildHeadPlaylistContainer(
+              'Sobel',
+              'Feel the heat.',
+              'https://i.wpimg.pl/1200x/filerepo.grupawp.pl/api/v1/display/embed/3307d813-3714-41c9-9663-83cf69ccdd09',
+              _currentListeners['playlist3']!,
+              '56VhOZOF6hwqrbNYwkmcsH',
+              'https://open.spotify.com/artist/56VhOZOF6hwqrbNYwkmcsH',
+            ),
+            _buildHeadPlaylistContainer(
+              "90's Indie",
+              'Find the tempo.',
+              'https://media.npr.org/assets/img/2014/04/04/42-16783402_custom-5d1259268e5d2bc96bc5aec1dc07a17917937ef8.jpg',
+              _currentListeners['playlist3']!,
+              '7pDYHhlAulEmE68iW83zU1',
+              'https://open.spotify.com/playlist/7pDYHhlAulEmE68iW83zU1',
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildNearbyListenersButton() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          CupertinoPageRoute(
+              builder: (context) => const NearListenersMapScreen()),
+        );
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 30.w, vertical: 5.h),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Colors.purpleAccent, Color.fromARGB(255, 154, 191, 255)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 4,
+              offset: Offset(2, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                'Near me',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 22.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Icon(
+              Icons.map,
+              color: Colors.white,
+              size: 40.sp,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
