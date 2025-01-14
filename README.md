@@ -45,7 +45,6 @@ Musee helps you find your rhythm tribe! Connect with people who groove to the sa
 - Flutter for cross-platform development
 - Dart programming language
 - Material Design & Cupertino widgets
-- State management with Provider/Bloc
 
 <img src="https://github.com/user-attachments/assets/ad7bfadb-366f-4b76-8534-5a34591206f8" alt="App Screenshot 4" width="300" />
 
