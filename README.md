@@ -109,3 +109,8 @@ For technical support or business inquiries, please contact omergencbtf@gmail.co
 Whether you're a hardcore metal fan, a jazz enthusiast, or anywhere in between, find your perfect harmony in the music community. Your next best friend, concert buddy, or special someone might be just one song away.
 
 Download now and let the music bring you together!
+
+<a href="https://apps.apple.com/pl/app/musee-for-spotify/id6739033544">
+    <img src="https://github.com/user-attachments/assets/74586a2e-5a6a-4779-bdf4-e141c2a36ef7" alt="Download on the App Store" width="200" />
+</a>
+
