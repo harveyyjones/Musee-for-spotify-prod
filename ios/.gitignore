@@ -28,6 +28,7 @@ ServiceDefinitions.json
 Runner/GeneratedPluginRegistrant.*
 .env
 lib/.env
+google-services.json
 
 # Exceptions to above rules.
 !default.mode1v3

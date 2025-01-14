@@ -46,5 +46,6 @@ android/spotify-app-remote/.gradle/
 # Environment variables
 .env
 lib/.env
+google-services.json
 
 
