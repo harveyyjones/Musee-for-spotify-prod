@@ -42,3 +42,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 android/spotify-app-remote/.gradle/
+
+# Environment variables
+.env
+lib/.env
+
+

@@ -6,14 +6,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
-import 'package:spotify_project/Business_Logic/Models/spotify_refresh_token_response_model.dart';
-import 'package:spotify_project/Business_Logic/firestore_database_service.dart';
 import 'package:spotify_project/business/Spotify_Logic/Models/top_10_track_model.dart';
 import 'package:spotify_project/business/Spotify_Logic/constants.dart';
 import 'package:spotify_sdk/spotify_sdk.dart';
 import 'package:http/http.dart' as http;
-import 'package:uni_links/uni_links.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class BusinessLogic {

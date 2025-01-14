@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:spotify_project/Business_Logic/firestore_database_service.dart';
 import 'package:spotify_project/business/Spotify_Logic/Models/top_artists_of_the_user_model.dart';
-import 'package:spotify_project/business/Spotify_Logic/constants.dart';
 
 class SpotifyServiceForTopArtists {
   SpotifyServiceForTopArtists();

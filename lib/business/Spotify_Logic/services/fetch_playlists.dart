@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:spotify_project/business/Spotify_Logic/Models/top_playlists.dart';
-import 'package:spotify_project/business/Spotify_Logic/constants.dart';
 
 class SpotifyServiceForPlaylists {
   String accessToken;
