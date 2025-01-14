@@ -370,7 +370,6 @@ class BusinessLogic {
     try {
       _loading = true;
 
-      // Set a timeout for the connection attempt
       var result = await SpotifySdk.connectToSpotifyRemote(
         clientId: dotenv.env['SPOTIFY_CLIENT_ID']!,
         redirectUrl: dotenv.env['SPOTIFY_REDIRECT_URL']!,
